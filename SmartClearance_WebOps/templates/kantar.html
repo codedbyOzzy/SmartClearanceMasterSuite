@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page">
+  <h1>Kantar DBA Takip</h1>
+  <p class="sub">DP World / Yılport kantar motoru paket içinde. Canlı tarama internet ve liman erişimi ister.</p>
+
+  <div class="metrics">
+    <div class="metric"><div class="lbl">Toplam</div><div class="val" id="k-total">0</div></div>
+    <div class="metric"><div class="lbl">Hazır</div><div class="val" id="k-ready">0</div></div>
+    <div class="metric"><div class="lbl">Bekleyen</div><div class="val" id="k-pending">0</div></div>
+    <div class="metric"><div class="lbl">Son tarama</div><div class="val" style="font-size:1rem" id="k-scan">—</div></div>
+  </div>
+
+  <div class="work">
+    <div class="toolbar stack">
+      <label for="txt-konteynerler"><strong>Konteyner ekle</strong></label>
+      <textarea id="txt-konteynerler" placeholder="HAMU4241680"></textarea>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button type="button" class="btn" id="btn-k-ekle">Takibe Ekle</button>
+        <button type="button" class="btn ghost" id="btn-k-tara">Havuzu Tara</button>
+        <button type="button" class="btn ghost" id="btn-k-yenile">Yenile</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="work" style="overflow:auto;">
+    <table class="grid">
+      <thead>
+        <tr>
+          <th>Konteyner</th><th>Dosya</th><th>Kaynak</th><th>DBA / Durum</th><th>Son Kontrol</th><th style="text-align:center;">İşlem</th>
+        </tr>
+      </thead>
+      <tbody id="kantar-tbody"><tr><td colspan="6" class="empty">Yükleniyor…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/js/kantar.js?v={{ static_v }}"></script>{% endblock %}
