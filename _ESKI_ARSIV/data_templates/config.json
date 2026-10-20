@@ -1,0 +1,15 @@
+{
+  "excel_path": "\\\\Dgfile01\\ithalat\\ITH28\\Halit ENGELEK\\HANKOOK İ TAKİP RAPORU.xlsx",
+  "pdf_folder": "",
+  "mail_to": "muhasebe@hankookn.com",
+  "mail_cc": "mete.karatas@hankookn.com; aysegul.cetiner@hankookn.com; kardelen.aksoy@dogruer.com; halit.engelek@dogruer.com; 71604640@hankookn.com",
+  "qnb_user": "",
+  "qnb_pass": "",
+  "qnb_autofill": true,
+  "glp_user": "",
+  "glp_pass": "",
+  "glp_autofill": true,
+  "dogruer_user": "",
+  "dogruer_pass": "",
+  "dogruer_autofill": true
+}

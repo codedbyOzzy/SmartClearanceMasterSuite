@@ -1,0 +1,13 @@
+{
+  "hapag_client_id": "af0e2d34-0000-415f-9b38-161f97d18c4a",
+  "hapag_client_secret": "",
+  "one_api_key": "",
+  "cma_session_cookie": "",
+  "cma_token": "",
+  "default_excel_path": "//dgfile01/ithalat/ITH28/Halit ENGELEK/RAPOR/HANKOOK \u0130\u015e TAK\u0130P RAPORU 7.xlsx",
+  "auto_sync_enabled": true,
+  "auto_sync_interval_hours": 24,
+  "universal_hub_provider": "jsoncargo",
+  "universal_hub_key": "",
+  "auto_sync_interval": 20
+}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+
+<a href="/master-kontrol" data-pjax>&larr; Yeni kontrol</a>
+<h2 style="margin-top:14px;">Master Data Kontrol Sonucu</h2>
+
+{% if report.katalog_hata %}
+<div class="banner banner-error">Master katalog okunamadı: {{ report.katalog_hata }}
+    Lütfen geçerli bir Excel dosyası yükleyip tekrar deneyin.</div>
+{% endif %}
+
+{% if report.parse_errors %}
+<section class="card">
+    <h2>Okunamayan dosyalar</h2>
+    {% for e in report.parse_errors %}
+        <p class="msg-warn">{{ e.filename }}: {{ e.error }}</p>
+    {% endfor %}
+</section>
+{% endif %}
+
+{% if not report.katalog_hata %}
+<section class="card">
+    <p>
+        Master katalog: <strong>{{ report.katalog_kayit_sayisi }}</strong> kayıt
+        {% if report.katalog_yinelenen_sayisi %}({{ report.katalog_yinelenen_sayisi }} yinelenen kod, ilk kayıt kullanıldı){% endif %}
+        <br>
+        Fatura kalemleri: <strong>{{ report.total }}</strong> ürün ·
+        <span class="status-pill st-temiz"><i class="dot"></i>{{ report.matched_count }} eşleşti</span>
+        <span class="status-pill st-uyari"><i class="dot"></i>{{ report.mismatch_count }} tanım uyuşmuyor</span>
+        <span class="status-pill st-hata"><i class="dot"></i>{{ report.missing_count }} master'da yok</span>
+    </p>
+    {% if report.eklenecek_filename %}
+    <a class="button" href="/master-kontrol/indir/{{ run_id }}/{{ report.eklenecek_filename }}">
+        Master'da olmayan {{ report.missing_count }} ürünü indir (mastera eklenecek formatında)
+    </a>
+    {% endif %}
+    {% if report.tanim_uyusmuyor_filename %}
+    <a class="button" href="/master-kontrol/indir/{{ run_id }}/{{ report.tanim_uyusmuyor_filename }}">
+        Tanımı uyuşmayan {{ report.mismatch_count }} ürünü indir (mastera eklenecek formatında)
+    </a>
+    {% endif %}
+    <button type="button" class="button button-ghost btn-mail"
+        data-mail-subject="{{ report.mail.subject }}" data-mail-body="{{ report.mail.body }}">✉ Mail Hazırla</button>
+</section>
+
+<section class="card">
+    <h2>Kalem Detayı</h2>
+    <button type="button" class="button button-ghost btn-copy-table" data-copy-table="tablo-master">📋 Tabloyu Kopyala</button>
+    <table id="tablo-master">
+        <thead><tr><th>Kod</th><th>Fatura Tanımı</th><th>Master Tanımı</th><th>GTİP</th><th>Durum</th></tr></thead>
+        <tbody>
+        {% for r in report.rows|sort(attribute='status') %}
+            <tr class="{{ 'row-check' if r.status != 'matched' else '' }}">
+                <td class="mono">{{ r.product_code }}</td>
+                <td>{{ r.invoice_description }}</td>
+                <td>{{ r.master_turkish_description or r.master_description or '—' }}</td>
+                <td class="mono">{{ r.master_gtip or '—' }}</td>
+                <td>
+                    {% if r.status == 'matched' %}<span class="status-pill st-temiz"><i class="dot"></i>Eşleşti</span>
+                    {% elif r.status == 'description_mismatch' %}<span class="status-pill st-uyari"><i class="dot"></i>Tanım Uyuşmuyor</span>
+                    {% else %}<span class="status-pill st-hata"><i class="dot"></i>Master'da Yok</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endif %}
+
+{% endblock %}

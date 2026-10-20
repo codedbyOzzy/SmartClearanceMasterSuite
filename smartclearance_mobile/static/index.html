@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>SmartClearance — Mobil Kokpit & Gemi Radarı</title>
+  
+  <!-- Apple & PWA Meta Etiketleri -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SmartClearance">
+  <meta name="theme-color" content="#000000">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="https://img.icons8.com/color/192/compass--v1.png">
+
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <!-- TailwindCSS (Minimal Standalone) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            obsidian: '#000000',
+            surface: '#09090b',
+            card: 'rgba(18, 21, 30, 0.72)',
+            cardHover: 'rgba(28, 33, 48, 0.85)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Leaflet CSS & JS (Deniz Haritası için) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Özel Obsidian Stilleri -->
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="bg-black text-zinc-100 flex flex-col min-h-screen">
+
+  <!-- 1. ÜST HEADER (APPLE / VERCEL MINIMALIST) -->
+  <header class="app-header px-4 pt-3 pb-3 flex items-center justify-between">
+    <div class="flex items-center space-x-2.5">
+      <div class="w-8 h-8 rounded-xl bg-zinc-900 border border-white/10 flex items-center justify-center shadow-inner">
+        <span class="text-sm">🏛️</span>
+      </div>
+      <div>
+        <div class="flex items-center space-x-1.5">
+          <h1 class="font-semibold text-base tracking-tight text-white">SmartClearance</h1>
+          <span class="px-1.5 py-0.2 text-[10px] font-bold tracking-wider uppercase rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">PRO</span>
+        </div>
+        <p class="text-[11px] text-zinc-400 font-medium">Doğruer & Hankook Operasyon</p>
+      </div>
+    </div>
+
+    <!-- Canlı Durum & Yenile Butonu -->
+    <div class="flex items-center space-x-2">
+      <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+        <div class="pulse-dot"></div>
+        <span class="text-[11px] font-medium text-emerald-400" id="live-indicator">Canlı</span>
+      </div>
+      <button onclick="refreshData()" class="p-2 rounded-xl bg-zinc-900/90 border border-white/10 active:scale-95 transition-transform text-zinc-300 hover:text-white" title="Yenile">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- 2. ANA İÇERİK ALANI -->
+  <main class="flex-1 px-4 pt-3 content-bottom-pad">
+
+    <!-- ÜST VERCEL TARZI METRİK SAYAÇ KARTLARI -->
+    <section class="grid grid-cols-2 gap-2.5 mb-4">
+      <!-- Kart 1: Açık Dosyalar -->
+      <div class="glass-card p-3" onclick="setCockpitFilter('active')">
+        <div class="text-[11px] font-semibold tracking-wider text-zinc-400 uppercase flex items-center justify-between">
+          <span>Açık Dosyalar</span>
+          <span class="text-sky-400 text-xs">⚡</span>
+        </div>
+        <div class="text-2xl font-bold text-white mt-1" id="stat-active">--</div>
+        <div class="text-[10px] text-zinc-500 mt-0.5" id="stat-total-sub">Toplam -- dosya</div>
+      </div>
+
+      <!-- Kart 2: Vergi Bekleyen -->
+      <div class="glass-card p-3" onclick="setCockpitFilter('tax')">
+        <div class="text-[11px] font-semibold tracking-wider text-amber-400 uppercase flex items-center justify-between">
+          <span>Vergi Bekleyen</span>
+          <span class="text-amber-400 text-xs">✉️</span>
+        </div>
+        <div class="text-2xl font-bold text-amber-300 mt-1" id="stat-tax">--</div>
+        <div class="text-[10px] text-zinc-500 mt-0.5">Dekont / Tahakkuk</div>
+      </div>
+
+      <!-- Kart 3: Tescilde -->
+      <div class="glass-card p-3" onclick="setCockpitFilter('tescil')">
+        <div class="text-[11px] font-semibold tracking-wider text-emerald-400 uppercase flex items-center justify-between">
+          <span>Tescilde</span>
+          <span class="text-emerald-400 text-xs">🟢</span>
+        </div>
+        <div class="text-2xl font-bold text-emerald-300 mt-1" id="stat-tescil">--</div>
+        <div class="text-[10px] text-zinc-500 mt-0.5">Beyanname tescilli</div>
+      </div>
+
+      <!-- Kart 4: Yoldaki Gemiler -->
+      <div class="glass-card p-3" onclick="switchTab('horizon')">
+        <div class="text-[11px] font-semibold tracking-wider text-purple-400 uppercase flex items-center justify-between">
+          <span>Yoldaki Gemi</span>
+          <span class="text-purple-400 text-xs">🚢</span>
+        </div>
+        <div class="text-2xl font-bold text-purple-300 mt-1" id="stat-vessels">--</div>
+        <div class="text-[10px] text-zinc-500 mt-0.5" id="stat-containers-sub">-- konteyner radarda</div>
+      </div>
+    </section>
+
+    <!-- HIZLI ARAMA ÇUBUĞU (APPLE SPOTLIGHT STYLE) -->
+    <div class="relative mb-3">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-500">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+      </div>
+      <input type="text" id="global-search-input" placeholder="Dosya, BL, konteyner veya beyanname ara..." 
+             class="w-full pl-9 pr-8 py-2.5 bg-zinc-900/80 border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-sky-500/50 focus:bg-zinc-900 transition-all font-sans"
+             oninput="handleSearchInput(this.value)">
+      <button id="search-clear-btn" onclick="clearSearch()" class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-500 hover:text-white">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- =========================================================================
+         SEKME 1: KOKPİT GÖRÜNÜMÜ (VARSAYILAN)
+         ========================================================================= -->
+    <section id="view-cockpit" class="tab-view block">
+      <!-- Segmented Bar (Filtreler) -->
+      <div class="segmented-bar -mx-4">
+        <button class="segment-btn active" data-filter="all" onclick="setCockpitFilter('all')">Tümü</button>
+        <button class="segment-btn" data-filter="active" onclick="setCockpitFilter('active')">⚡ Aktif</button>
+        <button class="segment-btn" data-filter="tax" onclick="setCockpitFilter('tax')">✉️ Vergi Bekleyen</button>
+        <button class="segment-btn" data-filter="tescil" onclick="setCockpitFilter('tescil')">🟢 Tescilde</button>
+        <button class="segment-btn" data-filter="red" onclick="setCockpitFilter('red')">🔴 Kırmızı Hat</button>
+        <button class="segment-btn" data-filter="closed" onclick="setCockpitFilter('closed')">📁 Kapandı</button>
+      </div>
+
+      <!-- Dosyalar Listesi -->
+      <div id="cockpit-list" class="space-y-2.5 mt-2">
+        <div class="text-center py-10 text-zinc-500 text-xs">Veriler yükleniyor...</div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SEKME 2: HORIZON GEMİ & KONTEYNER RADARI (HARİTA)
+         ========================================================================= -->
+    <section id="view-horizon" class="tab-view hidden space-y-3">
+      <div class="flex items-center justify-between px-1">
+        <div>
+          <h2 class="text-sm font-semibold text-white">Küresel Konteyner Radarı</h2>
+          <p class="text-[11px] text-zinc-400">Canlı AIS gemi konumları ve varış takibi</p>
+        </div>
+        <span class="text-xs px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20" id="horizon-count-badge">-- Gemi</span>
+      </div>
+
+      <!-- Dokunmatik Leaflet Haritası -->
+      <div id="mobile-map-container"></div>
+
+      <!-- Gemi / Konteyner Kartları Listesi -->
+      <div class="space-y-2" id="horizon-vessel-list">
+        <div class="text-center py-8 text-zinc-500 text-xs">Radar verileri yükleniyor...</div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SEKME 3: KANTAR & GTB HAVUZU
+         ========================================================================= -->
+    <section id="view-kantar" class="tab-view hidden space-y-4">
+      <!-- Kantar Bölümü -->
+      <div>
+        <div class="flex items-center justify-between mb-2 px-1">
+          <div class="flex items-center space-x-1.5">
+            <span class="text-base">⚖️</span>
+            <h2 class="text-sm font-semibold text-white">DP World Kantar Tartımları</h2>
+          </div>
+          <span class="text-[11px] text-zinc-500" id="kantar-count">0 Kayıt</span>
+        </div>
+        <div id="kantar-list" class="space-y-2">
+          <div class="text-center py-4 text-zinc-500 text-xs">Kantar kayıtları taranıyor...</div>
+        </div>
+      </div>
+
+      <!-- GTB Bölümü -->
+      <div>
+        <div class="flex items-center justify-between mb-2 px-1">
+          <div class="flex items-center space-x-1.5">
+            <span class="text-base">🏛️</span>
+            <h2 class="text-sm font-semibold text-white">Ticaret Bakanlığı GTB Havuzu</h2>
+          </div>
+          <span class="text-[11px] text-zinc-500" id="gtb-count">0 Beyanname</span>
+        </div>
+        <div id="gtb-list" class="space-y-2">
+          <div class="text-center py-4 text-zinc-500 text-xs">GTB kayıtları taranıyor...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SEKME 4: AKILLI ARAMA
+         ========================================================================= -->
+    <section id="view-search" class="tab-view hidden space-y-3">
+      <div class="px-1">
+        <h2 class="text-sm font-semibold text-white">Evrensel Dosya & Konteyner Arama</h2>
+        <p class="text-[11px] text-zinc-400">Tüm arşiv ve canlı sistemde anlık tarama</p>
+      </div>
+      <div id="search-results-list" class="space-y-2">
+        <div class="text-center py-10 text-zinc-500 text-xs">Aramak istediğiniz dosya, beyanname veya konteyneri yazın.</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 3. YÜZEN CAM ALT GEZİNME ADASI (FLOATING BOTTOM ISLAND) -->
+  <nav class="floating-bottom-nav">
+    <div class="nav-item active" data-tab="cockpit" onclick="switchTab('cockpit')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+      </svg>
+      <span>Kokpit</span>
+    </div>
+
+    <div class="nav-item" data-tab="horizon" onclick="switchTab('horizon')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+      </svg>
+      <span>Radar</span>
+    </div>
+
+    <div class="nav-item" data-tab="kantar" onclick="switchTab('kantar')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path>
+      </svg>
+      <span>GTB/Kantar</span>
+    </div>
+
+    <div class="nav-item" data-tab="search" onclick="switchTab('search')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+      </svg>
+      <span>Arama</span>
+    </div>
+  </nav>
+
+  <!-- 4. iOS BOTTOM SHEET DETAY ÇEKMECESİ -->
+  <div id="bottom-sheet-backdrop" class="bottom-sheet-backdrop" onclick="closeDetailSheet()"></div>
+  <div id="bottom-sheet" class="bottom-sheet">
+    <div class="sheet-handle"></div>
+    <div class="p-4 overflow-y-auto max-h-[82vh]" id="sheet-content">
+      <!-- JS ile dinamik doldurulur -->
+    </div>
+  </div>
+
+  <!-- JavaScript Kodları -->
+  <script src="/static/map_mobile.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

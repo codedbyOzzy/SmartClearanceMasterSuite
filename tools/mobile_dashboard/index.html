@@ -1,0 +1,1085 @@
+﻿<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Doğruer MasterSuite — Operasyon Komuta Merkezi</title>
+    
+    <!-- PWA Meta -->
+    <meta name="theme-color" content="#07090e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Doğruer Radar">
+    
+    <!-- Premium Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        obsidian: {
+                            950: '#06080d',
+                            900: '#0a0d14',
+                            850: '#0e131d',
+                            800: '#131926',
+                            700: '#1b2336',
+                            600: '#253049'
+                        },
+                        border: {
+                            subtle: 'rgba(255, 255, 255, 0.06)',
+                            hover: 'rgba(56, 189, 248, 0.35)',
+                            light: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Lucide Icons & Supabase JS v2 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+        body {
+            background-color: #07090e;
+            color: #f1f5f9;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: -0.011em;
+        }
+        
+        /* Subtle Custom Scrollbar */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+        
+        /* Clean Enterprise Surfaces */
+        .surface-card {
+            background-color: #0b0f17;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .surface-card:hover {
+            border-color: rgba(56, 189, 248, 0.25);
+        }
+        
+        .surface-row {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            transition: background-color 0.12s ease;
+        }
+        .surface-row:hover {
+            background-color: rgba(255, 255, 255, 0.025);
+        }
+        
+        /* Segment Tab Controls (Linear Style) */
+        .segment-btn {
+            color: #94a3b8;
+            font-weight: 500;
+            transition: all 0.15s ease;
+            position: relative;
+        }
+        .segment-btn:hover {
+            color: #f8fafc;
+        }
+        .segment-btn.active {
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .segment-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #38bdf8;
+            border-radius: 2px;
+        }
+
+        /* Pill Badge Styles */
+        .badge-ref {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(56, 189, 248, 0.08);
+            border: 1px solid rgba(56, 189, 248, 0.22);
+            color: #7dd3fc;
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+        
+        .badge-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        /* Pulsing Dot */
+        @keyframes subtle-pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.25); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .live-dot {
+            animation: subtle-pulse 2.2s infinite ease-in-out;
+        }
+
+        /* TV Presentation Mode Styling */
+        body.tv-mode {
+            zoom: 1.15;
+        }
+        body.tv-mode .surface-card {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-24 antialiased selection:bg-cyan-500 selection:text-black">
+
+    <!-- ===================================================================== -->
+    <!-- TV YAYIN MODU KOMUTA BARI (YALNIZCA TV MODUNDA GÖRÜNÜR) -->
+    <!-- ===================================================================== -->
+    <div id="tvControlBar" class="hidden bg-[#0d121c] text-white px-6 py-2.5 flex items-center justify-between sticky top-0 z-[60] border-b border-white/10 shadow-2xl">
+        <div class="flex items-center space-x-5">
+            <span class="flex items-center gap-2 font-mono text-xs uppercase tracking-wider bg-red-500/15 text-red-400 px-3 py-1 rounded-full border border-red-500/30 font-bold">
+                <span class="w-2 h-2 rounded-full bg-red-400 live-dot"></span>
+                TV WALLBOARD ACTIVE
+            </span>
+            <span id="tvCurrentTabName" class="text-sm font-semibold text-slate-200">1. Operasyon & GTB Hat Radarı</span>
+        </div>
+        <div class="flex items-center space-x-6">
+            <span id="tvClock" class="font-mono text-sm font-semibold tracking-widest text-slate-300">14:58:00</span>
+            <span id="tvCountdown" class="text-xs font-mono font-medium text-cyan-400 bg-cyan-950/40 px-3 py-1 rounded-md border border-cyan-800/40">Sıradaki: 20s</span>
+            <button onclick="toggleTvPresentationMode()" class="px-3 py-1 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-medium rounded-lg border border-white/10 transition">
+                ✕ Kapat
+            </button>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- 1. ÜST HEADER (MINIMAL EXECUTIVE BRANDING) -->
+    <!-- ===================================================================== -->
+    <header class="sticky top-0 z-50 bg-[#07090e]/95 backdrop-blur-md border-b border-white/[0.06] px-4 lg:px-8 py-3.5">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            
+            <!-- Sol: Logo & Başlık -->
+            <div class="flex items-center space-x-3.5">
+                <div class="w-8 h-8 rounded-lg bg-slate-900 border border-white/10 flex items-center justify-center text-cyan-400 font-mono font-bold text-sm shadow-sm">
+                    D
+                </div>
+                <div class="flex items-center space-x-2.5">
+                    <span class="text-sm font-bold tracking-tight text-white uppercase">Doğruer MasterSuite</span>
+                    <span class="text-slate-600 text-xs">/</span>
+                    <span class="text-xs text-slate-400 font-medium">Hankook Operasyon Radarı</span>
+                </div>
+            </div>
+
+            <!-- Sağ: Canlılık Rozeti, Ses, TV & Arama -->
+            <div class="flex items-center space-x-2.5">
+                
+                <!-- Bulut Canlılık İndikatörü -->
+                <div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 live-dot"></span>
+                    <span class="hidden sm:inline">Supabase Realtime</span>
+                </div>
+
+                <!-- Ses Butonu -->
+                <button id="btnSoundToggle" onclick="toggleSoundAlerts()" title="Sesli Kırmızı Hat Uyarıları"
+                        class="p-2 rounded-lg bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.08] text-slate-400 hover:text-white transition">
+                    <i id="soundIcon" data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                </button>
+
+                <!-- TV Modu Butonu -->
+                <button id="btnTvMode" onclick="toggleTvPresentationMode()" title="Ofis TV Ekran Yayını"
+                        class="px-2.5 py-1.5 rounded-lg bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.08] text-slate-300 hover:text-white transition flex items-center gap-1.5 text-xs font-medium">
+                    <i data-lucide="tv" class="w-3.5 h-3.5 text-amber-400"></i>
+                    <span class="hidden sm:inline">TV Modu</span>
+                </button>
+
+                <!-- Manuel Yenileme -->
+                <button onclick="fetchAllData(true)" title="Verileri Şimdi Eşitle"
+                        class="p-2 rounded-lg bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.08] text-slate-400 hover:text-white active:scale-95 transition">
+                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- TV İlerleme Çubuğu -->
+        <div id="tvProgressBar" class="h-0.5 bg-cyan-400 w-0 transition-all duration-200 hidden"></div>
+    </header>
+
+    <!-- ===================================================================== -->
+    <!-- 2. ANA GÖVDE -->
+    <!-- ===================================================================== -->
+    <main class="max-w-7xl mx-auto px-4 lg:px-8 py-5 space-y-5">
+
+        <!-- A. UNIFIED HORIZONTAL KPI BAR (FINTECH / STRIPE STYLE) -->
+        <div class="surface-card rounded-xl p-0 overflow-hidden divide-y divide-white/[0.05] lg:divide-y-0 lg:divide-x lg:divide-white/[0.05] grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+            
+            <!-- Metrik 1: Açık / Aktif Dosyalar -->
+            <div class="p-4 space-y-1">
+                <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Aktif Gümrük Dosyası</div>
+                <div class="flex items-baseline space-x-2">
+                    <span id="kpiActiveFiles" class="text-2xl font-bold font-mono text-white tracking-tight">0</span>
+                    <span class="text-xs text-slate-500 font-mono">dosya</span>
+                </div>
+                <div class="text-[11px] text-cyan-400 font-medium">186 Hankook Kaydı</div>
+            </div>
+
+            <!-- Metrik 2: Kırmızı Hat -->
+            <div class="p-4 space-y-1 bg-rose-500/[0.015]">
+                <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                    Kırmızı Hat
+                </div>
+                <div class="flex items-baseline space-x-2">
+                    <span id="kpiRedHat" class="text-2xl font-bold font-mono text-rose-400 tracking-tight">0</span>
+                    <span class="text-xs text-slate-500 font-mono">fiziki</span>
+                </div>
+                <div class="text-[11px] text-rose-400/80 font-medium">Muayene Bekleyen</div>
+            </div>
+
+            <!-- Metrik 3: Sarı Hat -->
+            <div class="p-4 space-y-1 bg-amber-500/[0.015]">
+                <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    Sarı Hat
+                </div>
+                <div class="flex items-baseline space-x-2">
+                    <span id="kpiYellowHat" class="text-2xl font-bold font-mono text-amber-400 tracking-tight">0</span>
+                    <span class="text-xs text-slate-500 font-mono">belge</span>
+                </div>
+                <div class="text-[11px] text-amber-400/80 font-medium">Kontrol Sürecinde</div>
+            </div>
+
+            <!-- Metrik 5: Vergi Mailleri -->
+            <div class="p-4 space-y-1 col-span-2 sm:col-span-1">
+                <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="mail-warning" class="w-3.5 h-3.5 text-purple-400"></i>
+                    Vergi Talebi
+                </div>
+                <div class="flex items-baseline space-x-2">
+                    <span id="kpiMailPending" class="text-2xl font-bold font-mono text-purple-300 tracking-tight">0</span>
+                    <span class="text-xs text-slate-500 font-mono">mail</span>
+                </div>
+                <div id="kpiMailSub" class="text-[11px] text-purple-400 font-medium">Atılmayan Acil: 0</div>
+            </div>
+        </div>
+
+        <!-- B. TOOLBAR: ARAMA + GÖRÜNÜM MODU (KART vs TABLO) -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+            
+            <!-- Global Search Box -->
+            <div class="relative w-full sm:w-96">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3 text-slate-500"></i>
+                <input type="text" id="searchInput" oninput="handleSearchChange()" 
+                       placeholder="Dosya no, Hankook ref (4200...), B/L, konteyner ara..." 
+                       class="w-full bg-[#0b0f17] border border-white/[0.08] hover:border-white/[0.15] focus:border-cyan-500/50 rounded-lg pl-9 pr-8 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 transition">
+                <button onclick="clearSearch()" id="btnClearSearch" class="hidden absolute right-3 top-2.5 text-slate-500 hover:text-white">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+            </div>
+
+            <!-- Görünüm Seçici (Kompakt Liste / Tablo vs Kart Izgarası) -->
+            <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                <div class="bg-[#0b0f17] border border-white/[0.08] p-0.5 rounded-lg flex items-center space-x-1">
+                    <button onclick="setViewMode('table')" id="btnViewTable" class="px-2.5 py-1 text-xs font-medium rounded-md text-slate-400 hover:text-white transition flex items-center gap-1.5">
+                        <i data-lucide="table" class="w-3.5 h-3.5"></i>
+                        <span>Tablo</span>
+                    </button>
+                    <button onclick="setViewMode('grid')" id="btnViewGrid" class="px-2.5 py-1 text-xs font-semibold rounded-md bg-white/[0.08] text-white transition flex items-center gap-1.5">
+                        <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+                        <span>Kartlar</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- C. ANA SEKME NAVİGASYONU (LINEAR PILL TABS) -->
+        <div class="flex border-b border-white/[0.06] text-xs font-medium overflow-x-auto no-scrollbar space-x-7 px-1">
+            <button onclick="switchTab('gtb')" id="tabBtn-gtb" class="segment-btn active py-3 flex items-center gap-2 whitespace-nowrap">
+                <span>1. Operasyon & Hat Radarı</span>
+                <span id="badgeGtb" class="text-[11px] bg-white/[0.05] text-cyan-400 px-1.5 py-0.5 rounded font-mono font-bold">0</span>
+            </button>
+            <button onclick="switchTab('mail')" id="tabBtn-mail" class="segment-btn py-3 flex items-center gap-2 whitespace-nowrap">
+                <span>2. Vergi Mailleri & Muhasebe</span>
+                <span id="badgeMail" class="text-[11px] bg-white/[0.05] text-purple-400 px-1.5 py-0.5 rounded font-mono font-bold">0</span>
+            </button>
+            <button onclick="switchTab('kantar')" id="tabBtn-kantar" class="segment-btn py-3 flex items-center gap-2 whitespace-nowrap">
+                <span>3. DP World Kantar & Tike</span>
+                <span id="badgeKantar" class="text-[11px] bg-white/[0.05] text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">0</span>
+            </button>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- SEKME 1: OPERASYON & GTB HAT RADARI -->
+        <!-- ================================================================= -->
+        <div id="tabContent-gtb" class="space-y-3">
+            
+            <!-- Alt Filtre Butonları -->
+            <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 text-xs font-medium text-slate-400">
+                <span class="text-slate-500 text-[11px] mr-1">Filtre:</span>
+                <button onclick="setGtbFilter('ALL')" id="chipGtb-ALL" class="px-2.5 py-1 rounded-md bg-white/[0.08] text-white font-medium border border-white/[0.1]">Tümü (<span id="cntGtbAll">0</span>)</button>
+                <button onclick="setGtbFilter('RED')" id="chipGtb-RED" class="px-2.5 py-1 rounded-md bg-transparent text-slate-400 hover:text-rose-400 border border-white/[0.05] hover:border-rose-500/30">🔴 Kırmızı Hat (<span id="cntGtbRed">0</span>)</button>
+                <button onclick="setGtbFilter('YELLOW')" id="chipGtb-YELLOW" class="px-2.5 py-1 rounded-md bg-transparent text-slate-400 hover:text-amber-400 border border-white/[0.05] hover:border-amber-500/30">🟡 Sarı Hat (<span id="cntGtbYellow">0</span>)</button>
+                <button onclick="setGtbFilter('TESCIL')" id="chipGtb-TESCIL" class="px-2.5 py-1 rounded-md bg-transparent text-slate-400 hover:text-cyan-400 border border-white/[0.05] hover:border-cyan-500/30">🔵 Tescilde (<span id="cntGtbTescil">0</span>)</button>
+                <button onclick="setGtbFilter('ORDINO')" id="chipGtb-ORDINO" class="px-2.5 py-1 rounded-md bg-transparent text-slate-400 hover:text-purple-400 border border-white/[0.05] hover:border-purple-500/30">📦 Ordino / Tareks (<span id="cntGtbOrdino">0</span>)</button>
+            </div>
+
+            <!-- Liste Kapsayıcısı -->
+            <div id="gtbListContainer">
+                <div class="text-center py-20 text-slate-500 text-xs font-mono">Veriler senkronize ediliyor...</div>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- SEKME 2: VERGİ MAİLLERİ & MUHASEBE -->
+        <!-- ================================================================= -->
+        <div id="tabContent-mail" class="hidden space-y-3">
+            <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 text-xs font-medium text-slate-400">
+                <span class="text-slate-500 text-[11px] mr-1">Mail Durumu:</span>
+                <button onclick="setMailFilter('ALL')" id="chipMail-ALL" class="px-2.5 py-1 rounded-md bg-white/[0.08] text-white border border-white/[0.1]">Tümü</button>
+                <button onclick="setMailFilter('PENDING')" id="chipMail-PENDING" class="px-2.5 py-1 rounded-md bg-transparent text-slate-400 hover:text-rose-400 border border-white/[0.05] hover:border-rose-500/30">🚨 Vergi Maili Bekleyenler (Acil)</button>
+                <button onclick="setMailFilter('SENT')" id="chipMail-SENT" class="px-2.5 py-1 rounded-md bg-transparent text-slate-400 hover:text-emerald-400 border border-white/[0.05] hover:border-emerald-500/30">✅ Mail İletilenler</button>
+            </div>
+
+            <div id="mailListContainer">
+                <div class="text-center py-20 text-slate-500 text-xs font-mono">Veriler senkronize ediliyor...</div>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- SEKME 3: DP WORLD KANTAR & TİKE -->
+        <!-- ================================================================= -->
+        <div id="tabContent-kantar" class="hidden space-y-3">
+            <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 text-xs font-medium text-slate-400">
+                <span class="text-slate-500 text-[11px] mr-1">Durum:</span>
+                <button onclick="setKantarFilter('ALL')" id="chipKantar-ALL" class="px-2.5 py-1 rounded-md bg-white/[0.08] text-white border border-white/[0.1]">Tümü</button>
+                <button onclick="setKantarFilter('READY')" id="chipKantar-READY" class="px-2.5 py-1 rounded-md bg-transparent text-slate-400 hover:text-emerald-400 border border-white/[0.05] hover:border-emerald-500/30">✅ Tike Hazır</button>
+                <button onclick="setKantarFilter('WAITING')" id="chipKantar-WAITING" class="px-2.5 py-1 rounded-md bg-transparent text-slate-400 hover:text-amber-400 border border-white/[0.05] hover:border-amber-500/30">⏳ Tartım Bekliyor</button>
+            </div>
+
+            <div id="kantarListContainer">
+                <div class="text-center py-20 text-slate-500 text-xs font-mono">Veriler senkronize ediliyor...</div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ===================================================================== -->
+    <!-- DETAY KARNESİ & AKSİYON PANELİ (SLICK BOTTOM DRAWER) -->
+    <!-- ===================================================================== -->
+    <div id="detailDrawer" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden transition-opacity">
+        <div class="fixed inset-x-0 bottom-0 max-h-[88vh] bg-[#0c1017] border-t border-white/10 rounded-t-2xl p-6 lg:p-7 overflow-y-auto max-w-3xl mx-auto shadow-2xl">
+            
+            <div class="w-10 h-1 bg-white/20 rounded-full mx-auto mb-5"></div>
+            
+            <div class="flex items-start justify-between mb-5">
+                <div>
+                    <div id="drawerBadge" class="badge-status mb-1 font-mono text-[10px]">DURUM</div>
+                    <h3 id="drawerTitle" class="text-xl font-bold text-white font-mono tracking-tight">26-096547</h3>
+                    <p id="drawerSub" class="text-xs text-slate-400 mt-0.5">Hankook Ref: <span id="drwRefTop" class="font-mono text-cyan-400 font-semibold">-</span></p>
+                </div>
+                <button onclick="closeDetailDrawer()" class="p-2 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Detay Verileri -->
+            <div class="space-y-3.5 text-xs">
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 bg-black/30 p-3.5 rounded-xl border border-white/[0.06]">
+                    <div>
+                        <span class="text-slate-500 text-[11px] block">Hankook Ref:</span>
+                        <strong id="drwRefNo" class="text-cyan-300 font-mono text-xs block mt-0.5">-</strong>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 text-[11px] block">Beyanname No:</span>
+                        <strong id="drwBeyanNo" class="text-slate-200 font-mono text-xs block mt-0.5">-</strong>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 text-[11px] block">Konşimento (B/L):</span>
+                        <strong id="drwBL" class="text-slate-200 font-mono text-xs block mt-0.5">-</strong>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 text-[11px] block">Taşıt / Gemi:</span>
+                        <strong id="drwGemi" class="text-slate-300 text-xs block mt-0.5">-</strong>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 text-[11px] block">Liman / Terminal:</span>
+                        <strong id="drwLiman" class="text-slate-300 text-xs block mt-0.5">-</strong>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 text-[11px] block">Gümrük Hattı:</span>
+                        <strong id="drwHat" class="text-slate-300 text-xs block mt-0.5">-</strong>
+                    </div>
+                </div>
+
+                <div class="bg-black/30 p-3.5 rounded-xl border border-white/[0.06] space-y-1">
+                    <span class="text-slate-500 text-[11px] uppercase tracking-wider block font-medium">🏛️ Operasyonel Aşama & Statü:</span>
+                    <p id="drwAciklama" class="text-slate-200 font-mono text-xs leading-relaxed">-</p>
+                </div>
+
+                <div class="bg-black/30 p-3.5 rounded-xl border border-white/[0.06] space-y-1">
+                    <span class="text-slate-500 text-[11px] uppercase tracking-wider block font-medium">📧 Outlook Vergi Talebi:</span>
+                    <p id="drwMailStatus" class="text-slate-200 text-xs leading-relaxed">-</p>
+                </div>
+
+                <div class="flex gap-2.5 pt-2">
+                    <button onclick="copyDrawerWhatsAppSummary()" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition active:scale-[0.99]">
+                        <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+                        <span>WhatsApp Formatında Kopyala</span>
+                    </button>
+                    <button onclick="closeDetailDrawer()" class="px-5 py-3 bg-white/5 hover:bg-white/10 text-slate-300 rounded-xl font-medium text-xs transition">
+                        Kapat
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- UYGULAMA MOTORU -->
+    <!-- ===================================================================== -->
+    <script>
+        const SUPABASE_URL = window.SC_SUPABASE_URL || localStorage.getItem("sc_supabase_url") || "";
+        const SUPABASE_KEY = window.SC_SUPABASE_KEY || localStorage.getItem("sc_supabase_anon_key") || "";
+        const sb = (SUPABASE_URL && SUPABASE_KEY && window.supabase)
+            ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+            : null;
+
+        let rawGtbData = [];
+        let rawKantarData = [];
+        let rawActivityLogs = [];
+
+        let activeTab = "gtb";
+        let viewMode = "grid"; // 'grid' veya 'table'
+        let currentGtbFilter = "ALL";
+        let currentMailFilter = "ALL";
+        let currentKantarFilter = "ALL";
+        let searchQuery = "";
+
+        let isTvMode = false;
+        let tvInterval = null;
+        let tvCountdownTimer = null;
+        let tvScrollTimer = null;
+        let tvClockTimer = null;
+        let tvCountdownVal = 20;
+        let soundEnabled = true;
+        let selectedDrawerItem = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            lucide.createIcons();
+            fetchAllData();
+            setupRealtimeSubscriptions();
+        });
+
+        // ---------------------------------------------------------------------
+        // WEB AUDIO API
+        // ---------------------------------------------------------------------
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playAlertTone(type = "alert") {
+            if (!soundEnabled) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === "red_hat") {
+                    osc.type = "sawtooth";
+                    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(440, audioCtx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.4);
+                } else {
+                    osc.type = "sine";
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.4);
+                }
+            } catch (e) {}
+        }
+
+        function toggleSoundAlerts() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById("soundIcon");
+            const btn = document.getElementById("btnSoundToggle");
+            if (soundEnabled) {
+                icon.setAttribute("data-lucide", "volume-2");
+                btn.classList.remove("text-rose-400");
+                playAlertTone("ding");
+            } else {
+                icon.setAttribute("data-lucide", "volume-x");
+                btn.classList.add("text-rose-400");
+            }
+            lucide.createIcons();
+        }
+
+        // ---------------------------------------------------------------------
+        // TV WALLBOARD MODU
+        // ---------------------------------------------------------------------
+        function toggleTvPresentationMode() {
+            isTvMode = !isTvMode;
+            const btn = document.getElementById("btnTvMode");
+            const pBar = document.getElementById("tvProgressBar");
+            const tvBar = document.getElementById("tvControlBar");
+
+            if (isTvMode) {
+                btn.classList.add("bg-cyan-500/20", "text-cyan-300", "border-cyan-500/40");
+                pBar.classList.remove("hidden");
+                tvBar.classList.remove("hidden");
+                document.body.classList.add("tv-mode");
+
+                if (!document.fullscreenElement) {
+                    try { document.documentElement.requestFullscreen().catch(() => {}); } catch(e) {}
+                }
+
+                playAlertTone("ding");
+
+                const tabs = [
+                    { id: "gtb", name: "1. Operasyon & Hat Radarı" },
+                    { id: "mail", name: "2. Vergi Mailleri & Muhasebe" },
+                    { id: "kantar", name: "3. DP World Kantar & Tike" }
+                ];
+                let currentIdx = tabs.findIndex(t => t.id === activeTab);
+                if (currentIdx < 0) currentIdx = 0;
+
+                function updateTvTab() {
+                    const t = tabs[currentIdx];
+                    switchTab(t.id);
+                    document.getElementById("tvCurrentTabName").innerText = `${currentIdx + 1}/3 · ${t.name}`;
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                    tvCountdownVal = 20;
+                }
+
+                updateTvTab();
+
+                clearInterval(tvCountdownTimer);
+                tvCountdownTimer = setInterval(() => {
+                    tvCountdownVal--;
+                    const nextIdx = (currentIdx + 1) % tabs.length;
+                    const cEl = document.getElementById("tvCountdown");
+                    if (cEl) cEl.innerText = `Sıradaki: ${tabs[nextIdx].name.split(' ')[1]} (${tvCountdownVal}s)`;
+                    
+                    pBar.style.width = `${((20 - tvCountdownVal) / 20) * 100}%`;
+
+                    if (tvCountdownVal <= 0) {
+                        currentIdx = nextIdx;
+                        updateTvTab();
+                    }
+                }, 1000);
+
+                clearInterval(tvScrollTimer);
+                tvScrollTimer = setInterval(() => {
+                    if (window.innerHeight + window.scrollY < document.body.offsetHeight - 80) {
+                        window.scrollBy({ top: 1.2, behavior: "auto" });
+                    }
+                }, 35);
+
+                clearInterval(tvClockTimer);
+                tvClockTimer = setInterval(() => {
+                    const clk = document.getElementById("tvClock");
+                    if (clk) clk.innerText = (new Date()).toLocaleTimeString("tr-TR");
+                }, 1000);
+
+            } else {
+                btn.classList.remove("bg-cyan-500/20", "text-cyan-300", "border-cyan-500/40");
+                pBar.classList.add("hidden");
+                tvBar.classList.add("hidden");
+                document.body.classList.remove("tv-mode");
+
+                clearInterval(tvCountdownTimer);
+                clearInterval(tvScrollTimer);
+                clearInterval(tvClockTimer);
+
+                if (document.fullscreenElement) {
+                    try { document.exitFullscreen().catch(() => {}); } catch(e) {}
+                }
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // VERİ SENKRONİZASYONU
+        // ---------------------------------------------------------------------
+        async function fetchAllData(showToast = false) {
+            try {
+                const [gtbRes, kantarRes, actRes] = await Promise.all([
+                    sb.from("ms_gtb_takip").select("*").order("dosya_no", { ascending: true }).limit(500),
+                    sb.from("ms_kantar_takip").select("*").order("updated_at", { ascending: false }).limit(200),
+                    sb.from("ms_activity_logs").select("*").order("created_at", { ascending: false }).limit(200)
+                ]);
+
+                if (gtbRes.data && gtbRes.data.length > 0) rawGtbData = gtbRes.data;
+                if (kantarRes.data) rawKantarData = kantarRes.data;
+                if (actRes.data) rawActivityLogs = actRes.data;
+
+                updateKPIs();
+                renderCurrentTab();
+
+                if (showToast) playAlertTone("ding");
+            } catch (err) {
+                console.error("Fetch hatası:", err);
+            }
+        }
+
+        function setupRealtimeSubscriptions() {
+            sb.channel("master-hub-channel")
+                .on("postgres_changes", { event: "*", schema: "public", table: "ms_gtb_takip" }, () => fetchAllData())
+                .on("postgres_changes", { event: "*", schema: "public", table: "ms_kantar_takip" }, () => fetchAllData())
+                .subscribe();
+        }
+
+        // ---------------------------------------------------------------------
+        // KPI HESAPLAMA
+        // ---------------------------------------------------------------------
+        function updateKPIs() {
+            const totalGtb = rawGtbData.length;
+            let redCount = 0;
+            let yellowCount = 0;
+            let tescilCount = 0;
+            let ordinoCount = 0;
+
+            rawGtbData.forEach(d => {
+                const h = (d.hat || "").toUpperCase();
+                const st = (d.gtb_durum || "").toUpperCase();
+                if (h.includes("KIRMIZI")) redCount++;
+                else if (h.includes("SARI")) yellowCount++;
+
+                if (st.includes("TESCIL")) tescilCount++;
+                if (st.includes("ORDİNO") || st.includes("ORDINO") || st.includes("TAREKS")) ordinoCount++;
+            });
+
+            document.getElementById("kpiActiveFiles").innerText = totalGtb;
+            document.getElementById("kpiRedHat").innerText = redCount;
+            document.getElementById("kpiYellowHat").innerText = yellowCount;
+            document.getElementById("badgeGtb").innerText = totalGtb;
+            document.getElementById("cntGtbAll").innerText = totalGtb;
+            document.getElementById("cntGtbRed").innerText = redCount;
+            document.getElementById("cntGtbYellow").innerText = yellowCount;
+            document.getElementById("cntGtbTescil").innerText = tescilCount;
+            document.getElementById("cntGtbOrdino").innerText = ordinoCount;
+
+            const taxMails = rawActivityLogs.filter(l => (l.islem_tipi || "").toUpperCase() === "VERGI_MAILI" || (l.baslik || "").includes("Vergi"));
+            const sentRefs = new Set(taxMails.map(m => m.ref_no || m.dosya_no));
+            const pendingMails = rawGtbData.filter(g => (g.gtb_durum || "").includes("Tescil") && !sentRefs.has(g.ref_no) && !sentRefs.has(g.dosya_no));
+
+            document.getElementById("kpiMailPending").innerText = taxMails.length;
+            document.getElementById("kpiMailSub").innerText = `Atılmayan Acil: ${pendingMails.length}`;
+            document.getElementById("badgeMail").innerText = `${taxMails.length} / ${pendingMails.length}`;
+
+            const readyKantar = rawKantarData.filter(k => k.tike_no || k.net_kg || k.kilo).length;
+            document.getElementById("badgeKantar").innerText = readyKantar;
+        }
+
+        // ---------------------------------------------------------------------
+        // GÖRÜNÜM MODU (KART vs TABLO)
+        // ---------------------------------------------------------------------
+        function setViewMode(mode) {
+            viewMode = mode;
+            const btnTable = document.getElementById("btnViewTable");
+            const btnGrid = document.getElementById("btnViewGrid");
+            if (mode === "table") {
+                btnTable.className = "px-2.5 py-1 text-xs font-semibold rounded-md bg-white/[0.08] text-white transition flex items-center gap-1.5";
+                btnGrid.className = "px-2.5 py-1 text-xs font-medium rounded-md text-slate-400 hover:text-white transition flex items-center gap-1.5";
+            } else {
+                btnGrid.className = "px-2.5 py-1 text-xs font-semibold rounded-md bg-white/[0.08] text-white transition flex items-center gap-1.5";
+                btnTable.className = "px-2.5 py-1 text-xs font-medium rounded-md text-slate-400 hover:text-white transition flex items-center gap-1.5";
+            }
+            renderCurrentTab();
+        }
+
+        // ---------------------------------------------------------------------
+        // SEKME YÖNETİMİ
+        // ---------------------------------------------------------------------
+        function switchTab(tabId) {
+            activeTab = tabId;
+            document.querySelectorAll(".segment-btn").forEach(btn => btn.classList.remove("active"));
+            document.getElementById(`tabBtn-${tabId}`).classList.add("active");
+
+            ["gtb", "mail", "kantar"].forEach(t => {
+                const el = document.getElementById(`tabContent-${t}`);
+                if (t === tabId) el.classList.remove("hidden");
+                else el.classList.add("hidden");
+            });
+
+            renderCurrentTab();
+        }
+
+        function renderCurrentTab() {
+            if (activeTab === "gtb") renderGtb();
+            else if (activeTab === "mail") renderMail();
+            else if (activeTab === "kantar") renderKantar();
+            lucide.createIcons();
+        }
+
+        // ---------------------------------------------------------------------
+        // 1. SEKME: OPERASYON & GTB HAT RADARI
+        // ---------------------------------------------------------------------
+        function setGtbFilter(f) {
+            currentGtbFilter = f;
+            document.querySelectorAll("[id^='chipGtb-']").forEach(b => {
+                b.className = "px-2.5 py-1 rounded-md bg-transparent text-slate-400 border border-white/[0.05] hover:border-white/20";
+            });
+            document.getElementById(`chipGtb-${f}`).className = "px-2.5 py-1 rounded-md bg-white/[0.08] text-white font-medium border border-white/[0.1]";
+            renderGtb();
+        }
+
+        function renderGtb() {
+            const container = document.getElementById("gtbListContainer");
+            let filtered = rawGtbData.filter(item => {
+                if (!matchesSearch(item.dosya_no, item.ref_no, item.beyanname_no, item.gtb_durum, item.firma)) return false;
+                const hat = (item.hat || "").toUpperCase();
+                const st = (item.gtb_durum || "").toUpperCase();
+                if (currentGtbFilter === "RED") return hat.includes("KIRMIZI");
+                if (currentGtbFilter === "YELLOW") return hat.includes("SARI");
+                if (currentGtbFilter === "TESCIL") return st.includes("TESCIL");
+                if (currentGtbFilter === "ORDINO") return st.includes("ORDİNO") || st.includes("ORDINO") || st.includes("TAREKS");
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="text-center py-20 text-slate-500 text-xs font-mono">Filtre kriterlerine uygun dosya bulunamadı.</div>`;
+                return;
+            }
+
+            if (viewMode === "table") {
+                // HIGH DENSITY TABULAR VIEW
+                container.innerHTML = `
+                <div class="surface-card rounded-xl overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-300">
+                            <thead class="bg-white/[0.02] text-slate-500 uppercase tracking-wider text-[10px] font-semibold border-b border-white/[0.05]">
+                                <tr>
+                                    <th class="py-3 px-4">Dosya No</th>
+                                    <th class="py-3 px-4">Hankook Ref</th>
+                                    <th class="py-3 px-4">Hat Durumu</th>
+                                    <th class="py-3 px-4">Operasyonel Aşama</th>
+                                    <th class="py-3 px-4">Beyanname No</th>
+                                    <th class="py-3 px-4 text-right">Aksiyon</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/[0.03]">
+                                ${filtered.map(item => `
+                                <tr onclick="openDetailDrawer('${item.dosya_no || item.ref_no}')" class="surface-row cursor-pointer">
+                                    <td class="py-3 px-4 font-mono font-bold text-white tracking-tight">${item.dosya_no || "—"}</td>
+                                    <td class="py-3 px-4"><span class="badge-ref">${item.ref_no || "—"}</span></td>
+                                    <td class="py-3 px-4">${getHatBadge(item.hat)}</td>
+                                    <td class="py-3 px-4 text-slate-300 font-mono text-[11px] truncate max-w-xs">${item.gtb_durum || "İşlemde"}</td>
+                                    <td class="py-3 px-4 font-mono text-slate-400">${item.beyanname_no || "—"}</td>
+                                    <td class="py-3 px-4 text-right">
+                                        <button class="text-cyan-400 hover:text-cyan-300 font-medium text-[11px]">Detay →</button>
+                                    </td>
+                                </tr>
+                                `).join("")}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                `;
+            } else {
+                // EXECUTIVE GRID VIEW
+                container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    ${filtered.map(item => `
+                    <div onclick="openDetailDrawer('${item.dosya_no || item.ref_no}')" 
+                         class="surface-card p-4 rounded-xl cursor-pointer active:scale-[0.99] space-y-2.5">
+                        
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <span class="font-mono font-bold text-sm text-white tracking-tight">${item.dosya_no || "—"}</span>
+                                <div class="mt-1 flex items-center gap-2">
+                                    <span class="badge-ref">Ref: ${item.ref_no || "—"}</span>
+                                    <span class="text-[11px] text-slate-500 font-medium">${item.firma || "WH-HANKOOK"}</span>
+                                </div>
+                            </div>
+                            ${getHatBadge(item.hat)}
+                        </div>
+
+                        <div class="text-[11px] text-slate-300 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04] font-mono leading-relaxed truncate">
+                            ${item.gtb_durum || "İşlemde"}
+                        </div>
+
+                        <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-white/[0.04]">
+                            <span class="font-mono text-slate-500">Beyan: ${item.beyanname_no || "—"}</span>
+                            <span class="text-cyan-400 hover:text-cyan-300 font-medium text-[11px]">Detay Aç →</span>
+                        </div>
+                    </div>
+                    `).join("")}
+                </div>
+                `;
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // 2. SEKME: VERGİ MAİLLERİ & MUHASEBE
+        // ---------------------------------------------------------------------
+        function setMailFilter(f) {
+            currentMailFilter = f;
+            document.querySelectorAll("[id^='chipMail-']").forEach(b => {
+                b.className = "px-2.5 py-1 rounded-md bg-transparent text-slate-400 border border-white/[0.05] hover:border-white/20";
+            });
+            document.getElementById(`chipMail-${f}`).className = "px-2.5 py-1 rounded-md bg-white/[0.08] text-white font-medium border border-white/[0.1]";
+            renderMail();
+        }
+
+        function renderMail() {
+            const container = document.getElementById("mailListContainer");
+
+            const taxMails = rawActivityLogs.filter(l => (l.islem_tipi || "").toUpperCase() === "VERGI_MAILI" || (l.baslik || "").includes("Vergi"));
+            const sentRefs = new Set(taxMails.map(m => m.ref_no || m.dosya_no));
+
+            const pendingList = rawGtbData.filter(g => (g.gtb_durum || "").includes("Tescil") && !sentRefs.has(g.ref_no) && !sentRefs.has(g.dosya_no)).map(g => ({
+                is_pending: true,
+                dosya_no: g.dosya_no,
+                ref_no: g.ref_no,
+                beyanname_no: g.beyanname_no,
+                created_at: g.updated_at
+            }));
+
+            const sentList = taxMails.map(m => ({
+                is_pending: false,
+                dosya_no: m.dosya_no,
+                ref_no: m.ref_no,
+                beyanname_no: m.beyanname_no,
+                icerik: m.icerik || "muhasebe@hankookn.com adresine iletildi.",
+                created_at: m.created_at
+            }));
+
+            let combined = [];
+            if (currentMailFilter === "PENDING") combined = pendingList;
+            else if (currentMailFilter === "SENT") combined = sentList;
+            else combined = [...pendingList, ...sentList];
+
+            let filtered = combined.filter(item => matchesSearch(item.dosya_no, item.ref_no, item.beyanname_no, item.icerik));
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="text-center py-20 text-slate-500 text-xs font-mono">Vergi maili kaydı bulunamadı.</div>`;
+                return;
+            }
+
+            container.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                ${filtered.map(item => `
+                <div onclick="openDetailDrawer('${item.dosya_no || item.ref_no}')" 
+                     class="surface-card p-4 rounded-xl cursor-pointer space-y-2.5 ${item.is_pending ? 'border-rose-500/25 bg-rose-500/[0.015]' : ''}">
+                    
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <span class="font-mono font-bold text-sm text-white tracking-tight">${item.dosya_no || "—"}</span>
+                            <div class="mt-1">
+                                <span class="badge-ref">Ref: ${item.ref_no || "—"}</span>
+                            </div>
+                        </div>
+                        ${item.is_pending 
+                            ? `<span class="badge-status bg-rose-500/10 text-rose-400 border border-rose-500/20">🚨 MAİL BEKLİYOR</span>`
+                            : `<span class="badge-status bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✅ GÖNDERİLDİ</span>`
+                        }
+                    </div>
+
+                    <div class="text-[11px] ${item.is_pending ? 'text-rose-300 bg-rose-500/5 border-rose-500/15' : 'text-slate-300 bg-white/[0.02] border-white/[0.04]'} p-2.5 rounded-lg border font-mono leading-relaxed">
+                        ${item.is_pending 
+                            ? `⚠️ Gümrük tescili alınmış ancak muhasebe@hankookn.com adresine vergi talebi iletilmedi!`
+                            : item.icerik
+                        }
+                    </div>
+
+                    <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-white/[0.04]">
+                        <span class="font-mono">Beyan: ${item.beyanname_no || "—"}</span>
+                        <span class="text-cyan-400 hover:text-cyan-300 font-medium">Detay →</span>
+                    </div>
+                </div>
+                `).join("")}
+            </div>
+            `;
+        }
+
+        // ---------------------------------------------------------------------
+        // 3. SEKME: DP WORLD KANTAR & TİKE
+        // ---------------------------------------------------------------------
+        function setKantarFilter(f) {
+            currentKantarFilter = f;
+            document.querySelectorAll("[id^='chipKantar-']").forEach(b => {
+                b.className = "px-2.5 py-1 rounded-md bg-transparent text-slate-400 border border-white/[0.05] hover:border-white/20";
+            });
+            document.getElementById(`chipKantar-${f}`).className = "px-2.5 py-1 rounded-md bg-white/[0.08] text-white font-medium border border-white/[0.1]";
+            renderKantar();
+        }
+
+        function renderKantar() {
+            const container = document.getElementById("kantarListContainer");
+            let filtered = rawKantarData.filter(item => {
+                if (!matchesSearch(item.konteyner_no, item.dosya_no, item.dba_no, item.liman)) return false;
+                const isReady = item.dba_no || item.kilo || item.pdf_url;
+                if (currentKantarFilter === "READY") return isReady;
+                if (currentKantarFilter === "WAITING") return !isReady;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="text-center py-20 text-slate-500 text-xs font-mono">Kantar tartım kaydı bulunamadı.</div>`;
+                return;
+            }
+
+            container.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                ${filtered.map(item => {
+                    const isReady = item.dba_no || item.kilo || item.pdf_url;
+                    return `
+                    <div class="surface-card p-4 rounded-xl space-y-2.5">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <span class="font-mono font-bold text-sm text-white tracking-tight">${item.konteyner_no || "—"}</span>
+                                <div class="text-[11px] text-slate-500 font-mono mt-0.5">Dosya: ${item.dosya_no || "—"}</div>
+                            </div>
+                            ${isReady 
+                                ? `<span class="badge-status bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✅ TİKE HAZIR</span>`
+                                : `<span class="badge-status bg-amber-500/10 text-amber-400 border border-amber-500/20">⏳ TARTIM BEKLİYOR</span>`
+                            }
+                        </div>
+
+                        <div class="bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04] flex items-center justify-between text-xs font-mono">
+                            <div>
+                                <span class="text-slate-500 text-[10px] block">Tartım:</span>
+                                <strong class="text-emerald-400 font-bold">${item.kilo || "—"} kg</strong>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-slate-500 text-[10px] block">Tike No:</span>
+                                <strong class="text-slate-200">${item.dba_no || "—"}</strong>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-white/[0.04]">
+                            <span class="text-slate-500">${item.liman || "DP WORLD"}</span>
+                            ${item.pdf_url 
+                                ? `<a href="${item.pdf_url}" target="_blank" class="text-cyan-400 hover:text-cyan-300 font-medium">Tike PDF İndir →</a>`
+                                : `<span class="text-slate-600">PDF Bekliyor</span>`
+                            }
+                        </div>
+                    </div>
+                    `;
+                }).join("")}
+            </div>
+            `;
+        }
+
+        // ---------------------------------------------------------------------
+        // DETAY ÇEKMECESİ
+        // ---------------------------------------------------------------------
+        function openDetailDrawer(key) {
+            if (!key) return;
+            const gtb = rawGtbData.find(g => g.dosya_no === key || g.ref_no === key) || {};
+            const mail = rawActivityLogs.find(m => m.dosya_no === key || m.ref_no === key);
+
+            selectedDrawerItem = { gtb, mail, key };
+
+            document.getElementById("drawerTitle").innerText = gtb.dosya_no || key;
+            document.getElementById("drwRefTop").innerText = gtb.ref_no || "—";
+            document.getElementById("drwRefNo").innerText = gtb.ref_no || "—";
+            document.getElementById("drwBeyanNo").innerText = gtb.beyanname_no || "—";
+            document.getElementById("drwBL").innerText = gtb.bl || "—";
+            document.getElementById("drwGemi").innerText = gtb.gemi || "MAERSK EL BOSQUE";
+            document.getElementById("drwLiman").innerText = gtb.liman || "RAILPORT / EVYAP";
+            document.getElementById("drwHat").innerText = gtb.hat || "BELİRLENMEDİ";
+            document.getElementById("drwAciklama").innerText = gtb.gtb_durum || "İşlemde";
+
+            if (mail) {
+                document.getElementById("drwMailStatus").innerHTML = `<span class="text-emerald-400 font-medium">✅ Gönderildi:</span> ${mail.icerik || mail.baslik}`;
+            } else {
+                document.getElementById("drwMailStatus").innerHTML = `<span class="text-rose-400 font-medium">🚨 Henüz Gönderilmedi!</span> muhasebe@hankookn.com adresine talep bekleniyor.`;
+            }
+
+            document.getElementById("drawerBadge").innerHTML = getHatBadge(gtb.hat);
+            document.getElementById("detailDrawer").classList.remove("hidden");
+            lucide.createIcons();
+        }
+
+        function closeDetailDrawer() {
+            document.getElementById("detailDrawer").classList.add("hidden");
+        }
+
+        function copyDrawerWhatsAppSummary() {
+            if (!selectedDrawerItem) return;
+            const g = selectedDrawerItem.gtb;
+            const m = selectedDrawerItem.mail;
+
+            const text = `📋 *DOĞRUER GÜMRÜK & HANKOOK OPERASYON BİLGİSİ*\n` +
+                         `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                         `📁 *Dosya No:* ${g.dosya_no || selectedDrawerItem.key}\n` +
+                         `🔖 *Hankook Ref:* ${g.ref_no || "—"}\n` +
+                         `📄 *Beyanname:* ${g.beyanname_no || "—"}\n` +
+                         `🚥 *Hat:* ${g.hat || "Belirlenmedi"}\n` +
+                         `🏛️ *Statü:* ${g.gtb_durum || "İşlemde"}\n` +
+                         `📧 *Vergi Talebi:* ${m ? "✅ Gönderildi" : "🚨 Bekliyor"}\n` +
+                         `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                         `_Doğruer MasterSuite Komuta Merkezi._`;
+
+            navigator.clipboard.writeText(text).then(() => {
+                alert("✅ WhatsApp özeti panoya kopyalandı!");
+            }).catch(() => {
+                prompt("Kopyalayınız:", text);
+            });
+        }
+
+        // ---------------------------------------------------------------------
+        // YARDIMCI METODLAR & ROZETLER
+        // ---------------------------------------------------------------------
+        function getHatBadge(hatStr) {
+            const h = (hatStr || "").toUpperCase();
+            if (h.includes("KIRMIZI")) {
+                return `<span class="badge-status bg-rose-500/10 text-rose-400 border border-rose-500/20 font-mono"><span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> KIRMIZI HAT</span>`;
+            } else if (h.includes("SARI")) {
+                return `<span class="badge-status bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> SARI HAT</span>`;
+            } else if (h.includes("YEŞİL") || h.includes("YESIL")) {
+                return `<span class="badge-status bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> YEŞİL HAT</span>`;
+            }
+            return `<span class="badge-status bg-white/5 text-slate-400 border border-white/10 font-mono">BELİRSİZ</span>`;
+        }
+
+        function handleSearchChange() {
+            searchQuery = document.getElementById("searchInput").value.trim().toLowerCase();
+            const btn = document.getElementById("btnClearSearch");
+            if (searchQuery) btn.classList.remove("hidden");
+            else btn.classList.add("hidden");
+            renderCurrentTab();
+        }
+
+        function clearSearch() {
+            document.getElementById("searchInput").value = "";
+            handleSearchChange();
+        }
+
+        function matchesSearch(...fields) {
+            if (!searchQuery) return true;
+            for (let f of fields) {
+                if (f && String(f).toLowerCase().includes(searchQuery)) return true;
+            }
+            return false;
+        }
+    </script>
+</body>
+</html>

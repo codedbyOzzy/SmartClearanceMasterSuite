@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+
+<a href="/excel-aktarim" data-pjax>&larr; Yeni işlem</a>
+<h2 style="margin-top:14px;">Islem Sonucu — {{ report.invoices|length }} fatura bulundu</h2>
+
+{% if report.parse_errors %}
+<section class="card">
+    <h2>Okunamayan dosyalar</h2>
+    {% for e in report.parse_errors %}
+        <p class="msg-warn">{{ e.filename }}: {{ e.error }}</p>
+    {% endfor %}
+</section>
+{% endif %}
+
+{% for inv in report.invoices %}
+{% set table_id = "tablo-excel-" ~ loop.index %}
+<section class="card invoice-card">
+    <div class="invoice-header">
+        <h3>Fatura No: <span class="mono">{{ inv.invoice_no }}</span></h3>
+        <div>
+            <a class="button" href="/indir/{{ run_id }}/{{ inv.output_filename }}">Bu faturanin Excel'ini indir</a>
+            <button type="button" class="button button-ghost btn-mail"
+                data-mail-subject="{{ inv.mail.subject }}" data-mail-body="{{ inv.mail.body }}">✉ Mail Hazırla</button>
+        </div>
+    </div>
+    <p class="hint">Kaynak dosya(lar): {{ inv.source_files|join(", ") }}</p>
+
+    {% for info in inv.infos %}<p class="msg-ok">[OK] {{ info }}</p>{% endfor %}
+    {% for w in inv.warnings %}<p class="msg-warn">[!] {{ w }}</p>{% endfor %}
+
+    {% if inv.kalemler %}
+    <button type="button" class="button button-ghost btn-copy-table" data-copy-table="{{ table_id }}">📋 Tabloyu Kopyala</button>
+    <table id="{{ table_id }}">
+        <thead><tr><th>Kod</th><th>Aciklama</th><th>Miktar</th><th>Durum</th></tr></thead>
+        <tbody>
+        {% for k in inv.kalemler %}
+            <tr class="{{ 'row-ok' if k.confirmed else 'row-check' }}">
+                <td class="mono">{{ k.kod }}</td>
+                <td>{{ k.aciklama }}</td>
+                <td class="mono">{{ k.miktar }}</td>
+                <td>{{ "OK" if k.confirmed else "KONTROL ET" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <p class="hint">{{ inv.unconfirmed_count }} satir sari (mense/fiyat/agirlik eksik ya da
+       dogrulanamadi) — Excel'de de isaretli, hucre yorumunda detay var.</p>
+    {% else %}
+    <p class="msg-warn">Bu faturada hic kalem bulunamadi.</p>
+    {% endif %}
+</section>
+{% endfor %}
+
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% if request.query_params.get("hata") == "katalog_yok" %}
+  <div class="banner banner-error">Önce master katalog Excel'ini yükleyin.</div>
+{% endif %}
+{% if request.query_params.get("mesaj") == "katalog_guncellendi" %}
+  <div class="banner banner-ok">Master katalog güncellendi.</div>
+{% endif %}
+
+<section class="card">
+    <h2>1. Master Ürün Kataloğu</h2>
+    <p class="hint">Ürün kodu → GTİP/Türkçe tanım/menşe referans listeniz. İstediğiniz zaman
+       silip güncel halini yeniden yükleyebilirsiniz — sütun adları değişse bile sistem
+       başlıkları otomatik tanır.</p>
+    {% if katalog_var %}
+        <p class="msg-ok">Master katalog yüklü.</p>
+    {% else %}
+        <p class="msg-warn">Henüz master katalog yüklenmedi.</p>
+    {% endif %}
+    <form action="/master-kontrol/katalog-yukle" method="post" enctype="multipart/form-data">
+        <input type="file" name="katalog" accept=".xlsx,.xls" required>
+        <button type="submit">Katalog Yükle / Güncelle</button>
+    </form>
+</section>
+
+<section class="card">
+    <h2>2. Fatura / Packing List PDF'lerini yükle</h2>
+    <form action="/master-kontrol" method="post" enctype="multipart/form-data" id="master-form" data-pjax>
+        <div class="dropzone" data-list="master-list">
+            <div class="dz-icon">⬆</div>
+            <div class="dz-text">PDF'leri buraya sürükleyin</div>
+            <div class="dz-sub">veya tıklayıp seçin</div>
+            <input type="file" name="faturalar" accept="application/pdf" multiple required>
+        </div>
+        <div class="file-chip-list" id="master-list"></div>
+        <button type="submit" {% if not katalog_var %}disabled{% endif %}>Kontrol Et</button>
+    </form>
+    <p class="hint">Fatura kalemlerindeki her ürün kodu master katalogda aranır: eşleşti /
+       tanım uyuşmuyor / kod master'da yok. Master'da olmayan kodlar, "mastera eklenecek
+       ürünler" formatında indirilebilir bir Excel'e otomatik toplanır.</p>
+</section>
+
+{% endblock %}

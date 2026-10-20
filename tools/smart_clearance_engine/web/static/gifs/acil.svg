@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="150" rx="16" fill="url(#bg)" stroke="#334155" stroke-width="2"/>
+  <g transform="translate(100,75)">
+    <circle cx="0" cy="0" r="42" fill="#EF4444" opacity="0.2">
+      <animate attributeName="opacity" values="0.2;0.6;0.2" dur="0.8s" repeatCount="indefinite"/>
+    </circle>
+    <text x="0" y="10" font-size="56" text-anchor="middle">🚨</text>
+  </g>
+</svg>

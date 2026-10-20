@@ -1,0 +1,36 @@
+================================================================================
+SMARTCLEARANCE MASTER SUITE (v4.85 PRO) — FULL YEDEK & TASINABILIR SURUM
+================================================================================
+
+Bu paket, SmartClearance APEX (Gumruk Operasyon Masasi & Evrak Studyosu) ile
+SmartClearance HORIZON (Kuresel Denizcilik & Canli Rota Radari) sistemlerini
+tek bir catida birlestiren eksiksiz, bagimsiz ve tasinabilir (portable) surumdur.
+
+--------------------------------------------------------------------------------
+YENI BILGISAYARDA CALISTIRMA ADIMLARI:
+--------------------------------------------------------------------------------
+
+1. Bu zip dosyasini istediginiz bir klasore cikarin (orn: Masaustu, D:\ veya C:\).
+2. Klasorun icinde yer alan:
+   👉 SMARTCLEARANCE_SUITE_BASLAT.bat
+   dosyasina cift tiklayin.
+
+3. BILGISAYARINIZDA PYTHON KURULU OLMASI GEREKMEZ!
+   Paket icerisinde gomulu (embedded) Python 3.12, PyQt6, QtWebEngine, PyMuPDF
+   ve tum ozel kutuphaneler hazir olarak gelmektedir.
+
+--------------------------------------------------------------------------------
+PAKET ICERIGINDEKI SON GELISTIRMELER (v4.85 PRO):
+--------------------------------------------------------------------------------
+- Tek Pencere Mimarisi: Apex ve Horizon ayni cerceve icerisinde calisir.
+- Akici Sinematik Gecis (60 FPS v2.0 Pro): 2 saniyelik askeri radar & obsidian cyber
+  grid animasyonlariyla prestijli sistem gecisleri.
+- Pazartesi / Hafta Sonu Radari: Hafta sonu limana inen ve dosyasi acilmamis
+  gemileri otomatik tespit eden akilli brifing uyarisi.
+- Aktif Yuk Filtresi (89 vs 709): Kapanmis/eski 620 arsiv yukunu ayiklayarak yalnizca
+  gercek sahada olan yukleri 10 saniyede canli tarayan yuksek hizli motor.
+- Hapag-Lloyd & Excel Varis Entegrasyonu: Bos konteyner iade tarihiyle gemi varisini
+  ayiran ve Sutun S (Varis Tarihi) ile esitleyen hatasiz analiz motoru.
+- Orijinal Is Takip Excel Dosyasi (YEDEK):
+  'HANKOOK_IS_TAKIP_RAPORU_YEDEK.xlsx' dosya icerisinde guvenle saklanmaktadir.
+================================================================================

@@ -1,0 +1,8 @@
+{
+  "bot_token": "",
+  "enabled": true,
+  "authorized_chat_ids": [],
+  "authorized_usernames": [],
+  "notify_kirmizi_hat": true,
+  "notify_tescil": true
+}

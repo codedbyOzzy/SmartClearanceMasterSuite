@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SmartClearance{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css?v=12345">
+    <link rel="stylesheet" href="/static/animations.css?v=12345">
+    <link rel="stylesheet" href="/static/chat_hub.css?v=12345">
+    <link rel="stylesheet" href="/static/sc_ai_widget.css?v=12345">
+    {% block extra_head %}{% endblock %}
+    <script>
+        (function() {
+            if (localStorage.getItem("sc_tema") === "dark") {
+                document.documentElement.setAttribute("data-theme", "dark");
+                document.documentElement.classList.add("dark-mode");
+            }
+    {% if request.query_params.get("embedded") == "1" %}
+    <style>
+        .sidebar, .sidebar-header-bar, .topbar, #sc-sidebar-tooltip-hud, #sc-spotlight-backdrop { display: none !important; }
+        .app-shell { display: block !important; }
+        .main-area { margin-left: 0 !important; width: 100% !important; max-width: 100% !important; padding: 10px 20px !important; }
+        body { background: #f8fafc !important; }
+        .card { max-width: 100% !important; margin: 0 auto 16px auto !important; }
+    </style>
+    {% endif %}
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header-bar">
+                <a href="/" class="sidebar-brand" data-pjax>
+                    <span class="brand-stage">
+                        <span class="brand-layer-sc">
+                            <svg class="brand-mark" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <circle cx="12" cy="12" r="8.3" stroke="currentColor" stroke-width="2.6" stroke-dasharray="2.3 1.7"/>
+                                <path d="M8 12.3 L10.5 14.8 L16 9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span class="brand-text">SmartClearance</span>
+                        </span>
+                        <span class="brand-layer-hankook">
+                            <img src="/static/img/hankook_logo.png?v={{ static_v }}" alt="Hankook">
+                        </span>
+                    </span>
+                </a>
+                <button type="button" id="sidebar-collapse-toggle" class="sc-sidebar-toggle" title="Yan Paneli Daralt / Genişlet (Ctrl + B)" aria-label="Menüyü daralt veya genişlet" data-title="Yan Paneli Genişlet" data-shortcut="Ctrl+B">
+                    <span class="sc-toggle-inner">
+                        <svg class="sc-toggle-svg" width="15" height="15" viewBox="0 0 24 24" fill="none">
+                            <path class="sc-chevron-1" d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path class="sc-chevron-2" d="M20 18L14 12L20 6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.4"/>
+                        </svg>
+                        <span class="sc-toggle-led"></span>
+                    </span>
+                </button>
+            </div>
+            <div class="scan-line-wrap"><div class="scan-line"></div></div>
+            <form action="/arama" method="get" class="sidebar-search" data-title="PO / Dosya No Ara" data-shortcut="Ctrl+K">
+                <span class="sidebar-search-ic">⌕</span>
+                <input type="text" name="q" placeholder="PO / Dosya No ara..." autocomplete="off">
+            </form>
+            <button type="button" id="open-spotlight-btn" class="spotlight-hint-btn" title="Hızlı Komut & Arama Merkezi (Ctrl+K)" data-title="Komut & Arama Merkezi" data-shortcut="Ctrl+K">⚡ Ctrl + K Komut Paneli</button>
+            <a href="/arama/toplu" data-pjax class="sidebar-toplu-arama {{ 'active' if request.url.path == '/arama/toplu' else '' }}">Birden fazla PO mu arıyorsun? Toplu Arama →</a>
+            <nav class="sidebar-nav sidebar-favoriler" id="sidebar-favoriler" style="display:none;">
+                <div class="sidebar-nav-baslik">★ Favorilerim</div>
+                <div id="sidebar-favoriler-govde"></div>
+            </nav>
+            <nav class="sidebar-nav">
+                <div class="sidebar-nav-satir">
+                <a href="/" data-pjax class="{{ 'active' if request.url.path == '/' else '' }}" data-title="Anasayfa">
+                    <span class="ic">⌂</span> <span class="nav-lbl">Anasayfa</span>
+                    <span id="bildirim-rozeti" class="status-pill st-hata" style="display:none; margin-left:6px; padding:1px 7px; font-size:0.7rem;"></span>
+                </a>
+                <button type="button" class="favori-yildiz" title="Favorilere ekle">☆</button>
+                </div>
+                <div class="sidebar-nav-satir">
+                <a href="/ekip-akisi" data-pjax class="{{ 'active' if request.url.path == '/ekip-akisi' else '' }}" data-title="Ekip Akışı">
+                    <span class="ic">✦</span> <span class="nav-lbl">Ekip Akışı</span>
+                </a>
+                <button type="button" class="favori-yildiz" title="Favorilere ekle">☆</button>
+                </div>
+                <div class="sidebar-nav-satir">
+                <a href="/hizli-islem" class="{{ 'active' if request.url.path == '/hizli-islem' else '' }}" data-title="Hızlı İşlem">
+                    <span class="ic">↯</span> <span class="nav-lbl">Hızlı İşlem</span>
+                </a>
+                <button type="button" class="favori-yildiz" title="Favorilere ekle">☆</button>
+                </div>
+                <div class="sidebar-nav-satir">
+                <a href="/excel-aktarim" data-pjax class="{{ 'active' if request.url.path == '/excel-aktarim' or request.url.path.startswith('/excel-aktarim/') else '' }}" data-title="Excel Aktarım">
+                    <span class="ic">▤</span> <span class="nav-lbl">Excel Aktarım</span>
+                </a>
+                <button type="button" class="favori-yildiz" title="Favorilere ekle">☆</button>
+                </div>
+                <div class="sidebar-nav-satir">
+                <a href="/beyanname" data-pjax class="{{ 'active' if request.url.path == '/beyanname' or request.url.path.startswith('/beyanname/') else '' }}" data-title="Beyanname Kontrol">
+                    <span class="ic">▦</span> <span class="nav-lbl">Beyanname Kontrol</span>
+                </a>
+                <button type="button" class="favori-yildiz" title="Favorilere ekle">☆</button>
+                </div>
+                <div class="sidebar-nav-satir">
+                <a href="/gtb-takip" data-pjax class="{{ 'active' if request.url.path == '/gtb-takip' or request.url.path.startswith('/gtb-takip/') else '' }}" data-title="GTB Otonom Takip">
+                    <span class="ic">🤖</span> <span class="nav-lbl">GTB Otonom Takip</span>
+                </a>
+                <button type="button" class="favori-yildiz" title="Favorilere ekle">☆</button>
+                </div>
+                <div class="sidebar-nav-satir">
+                <a href="/kantar-takip" data-pjax class="{{ 'active' if request.url.path == '/kantar-takip' else '' }}" data-title="Kantar Takip">
+                    <span class="ic">⚖️</span> <span class="nav-lbl">Kantar Takip</span>
+                </a>
+                <button type="button" class="favori-yildiz" title="Favorilere ekle">☆</button>
+                </div>
+                <div class="sidebar-nav-satir">
+                <a href="/nakliye-olustur" data-pjax class="{{ 'active' if request.url.path == '/nakliye-olustur' else '' }}" data-title="Nakliye Otomasyonu">
+                    <span class="ic">🚚</span> <span class="nav-lbl">Nakliye Otomasyonu</span>
+                </a>
+                <button type="button" class="favori-yildiz" title="Favorilere ekle">☆</button>
+                </div>
+                <div class="sidebar-nav-satir">
+                <a href="/arac-kutusu" data-pjax class="{{ 'active' if request.url.path == '/arac-kutusu' else '' }}" data-title="Evrak Araç Kutusu">
+                    <span class="ic">🛠</span> <span class="nav-lbl">Evrak Araç Kutusu</span>
+                </a>
+                <button type="button" class="favori-yildiz" title="Favorilere ekle">☆</button>
+                </div>
+                <div class="sidebar-nav-satir">
+                <a href="/ordino-olustur" data-pjax class="{{ 'active' if request.url.path == '/ordino-olustur' else '' }}" data-title="Ordino Otomasyonu">
+                    <span class="ic">📧</span> <span class="nav-lbl">Ordino Otomasyonu</span>
+                </a>
+                <button type="button" class="favori-yildiz" title="Favorilere ekle">☆</button>
+                </div>
+                <div class="sidebar-nav-satir">
+                <a href="/master-kontrol" data-pjax class="{{ 'active' if request.url.path == '/master-kontrol' or request.url.path.startswith('/master-kontrol/') else '' }}" data-title="Master Data Kontrol">
+                    <span class="ic">☰</span> <span class="nav-lbl">Master Data Kontrol</span>
+                </a>
+                <button type="button" class="favori-yildiz" title="Favorilere ekle">☆</button>
+                </div>
+                <div class="sidebar-nav-satir">
+                <a href="/beyanname-taslak" data-pjax class="{{ 'active' if request.url.path == '/beyanname-taslak' or request.url.path.startswith('/beyanname-taslak/') else '' }}" data-title="TAREKS Taslağı">
+                    <span class="ic">✎</span> <span class="nav-lbl">TAREKS Taslağı</span>
+                </a>
+                <button type="button" class="favori-yildiz" title="Favorilere ekle">☆</button>
+                </div>
+                <div class="sidebar-nav-satir">
+                <a href="/takip-raporu" data-pjax class="{{ 'active' if request.url.path == '/takip-raporu' or request.url.path.startswith('/takip-raporu/') else '' }}" data-title="İş Takip Raporu">
+                    <span class="ic">◷</span> <span class="nav-lbl">İş Takip Raporu</span>
+                </a>
+                <button type="button" class="favori-yildiz" title="Favorilere ekle">☆</button>
+                </div>
+                <div class="sidebar-nav-satir">
+                <a href="/canli-excel" data-pjax class="{{ 'active' if request.url.path == '/canli-excel' else '' }}" data-title="Merkezi İş Takip">
+                    <span class="ic">📊</span> <span class="nav-lbl">Merkezi İş Takip</span>
+                </a>
+                <button type="button" class="favori-yildiz" title="Favorilere ekle">☆</button>
+                </div>
+                <div class="sidebar-nav-satir">
+                <a href="/talepler" data-pjax class="{{ 'active' if request.url.path == '/talepler' or request.url.path.startswith('/talepler') else '' }}" data-title="Talepler">
+                    <span class="ic">⇄</span> <span class="nav-lbl">Talepler</span>
+                    {% if acik_talep_sayisi() %}<span class="status-pill st-uyari" style="margin-left:4px; padding:1px 7px; font-size:0.7rem;">{{ acik_talep_sayisi() }}</span>{% endif %}
+                </a>
+                <button type="button" class="favori-yildiz" title="Favorilere ekle">☆</button>
+                </div>
+                <div class="sidebar-nav-satir">
+                <a href="/islem-kayitlari" class="{{ 'active' if request.url.path.startswith('/islem-kayitlari') else '' }}" data-title="İşlem Kayıtları">
+                    <span class="ic">✓</span> <span class="nav-lbl">İşlem Kayıtları</span>
+                </a>
+                <button type="button" class="favori-yildiz" title="Favorilere ekle">☆</button>
+                </div>
+                <div class="sidebar-nav-satir">
+                <a href="/muhasebe-takip" class="{{ 'active' if request.url.path == '/muhasebe-takip' else '' }}" data-title="Muhasebe Takip">
+                    <span class="ic">₺</span> <span class="nav-lbl">Muhasebe Takip</span>
+                </a>
+                <button type="button" class="favori-yildiz" title="Favorilere ekle">☆</button>
+                </div>
+                <div class="sidebar-nav-satir">
+                <a href="/performans" data-pjax class="{{ 'active' if request.url.path == '/performans' else '' }}" data-title="Performans">
+                    <span class="ic">◈</span> <span class="nav-lbl">Performans</span>
+                </a>
+                <button type="button" class="favori-yildiz" title="Favorilere ekle">☆</button>
+                </div>
+            </nav>
+            <div class="sidebar-foot">
+                <div style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                    <span>Yerel · v1</span>
+                    <a href="/mola" style="text-decoration:none; filter:grayscale(100%); opacity:0.3; transition:all 0.2s;" onmouseover="this.style.opacity='1'; this.style.filter='none';" onmouseout="this.style.opacity='0.3'; this.style.filter='grayscale(100%)';" title="Operasyon Molası">🎮</a>
+                </div>
+                <button type="button" id="tema-toggle-btn" class="tema-degistir-btn" title="Gece / Gündüz Modu" data-title="Gece / Gündüz Modu">
+                    <span class="tema-icon" id="tema-icon">🌙</span>
+                    <span id="tema-metin">Gece Modu</span>
+                </button>
+            </div>
+        </aside>
+        <div class="topbar-mobile">
+            <button type="button" id="sidebar-toggle" class="button-ghost" style="margin:0;">☰</button>
+            <strong>SmartClearance</strong>
+        </div>
+        <div class="main-area">
+            <main class="{% block main_class %}container{% endblock %}" id="page-content">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <!-- ── SMARTCLEARANCE COLLAPSED SIDEBAR HOVER TOOLTIP HUD ── -->
+    <div id="sc-sidebar-tooltip-hud" class="sc-sidebar-tooltip-hud" aria-hidden="true">
+        <span class="sc-hud-dot"></span>
+        <span id="sc-hud-title" class="sc-hud-title"></span>
+        <span id="sc-hud-badge" class="sc-hud-badge" style="display:none;"></span>
+    </div>
+
+    <script src="/static/tema.js?v={{ static_v }}"></script>
+    <script src="/static/dropzone.js?v={{ static_v }}"></script>
+    <script src="/static/copy.js?v={{ static_v }}"></script>
+    <script src="/static/mail_export.js?v={{ static_v }}"></script>
+    <script src="/static/bildirim.js?v={{ static_v }}"></script>
+    <script src="/static/pjax.js?v={{ static_v }}"></script>
+    <script src="/static/favoriler.js?v={{ static_v }}"></script>
+    <script src="/static/arama_canli.js?v={{ static_v }}"></script>
+    <script src="/static/spotlight.js?v={{ static_v }}"></script>
+    <script src="/static/peek_drawer.js?v={{ static_v }}"></script>
+    <script src="/static/breadcrumb.js?v={{ static_v }}"></script>
+    <script src="/static/takip_raporu.js?v={{ static_v }}"></script>
+    <script src="/static/batch_tray.js?v={{ static_v }}"></script>
+    <script src="/static/muhasebe_takip.js?v={{ static_v }}"></script>
+    <script src="/static/islem_kayitlari.js?v={{ static_v }}"></script>
+    <script src="/static/gtb_takip.js?v={{ static_v }}"></script>
+    <script src="/static/quick_process.js?v={{ static_v }}"></script>
+    <script src="/static/chat_gif.js?v={{ static_v }}"></script>
+    <script src="/static/chat_hub.js?v={{ static_v }}"></script>
+    <script src="/static/sc_ai_widget.js?v=123456"></script>
+    <script src="/static/arac_kutusu.js?v={{ static_v }}"></script>
+
+    <!-- ── SMARTCLEARANCE SPOTLIGHT (CTRL+K COMMAND PALETTE) ── -->
+    <div id="sc-spotlight-backdrop" class="sc-spotlight-backdrop" style="display:none;">
+      <div id="sc-spotlight-modal" class="sc-spotlight-modal">
+        <div class="sc-spotlight-header">
+          <span class="sc-spotlight-search-ic">⌕</span>
+          <input type="text" id="sc-spotlight-input" class="sc-spotlight-input" placeholder="Dosya No, PO ara veya hızlı bir komut yaz... (ESC ile çık)" autocomplete="off">
+          <span class="sc-spotlight-kbd">ESC</span>
+        </div>
+        <div class="sc-spotlight-body">
+          <div id="sc-spotlight-results" class="sc-spotlight-results"></div>
+        </div>
+        <div class="sc-spotlight-footer">
+          <span><kbd>↑</kbd> <kbd>↓</kbd> gezinmek için</span>
+          <span><kbd>Enter</kbd> seçmek için</span>
+          <span><kbd>Ctrl</kbd> + <kbd>K</kbd> / <kbd>ESC</kbd> kapatmak için</span>
+        </div>
+      </div>
+    </div>
+    {% block scripts %}{% endblock %}
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

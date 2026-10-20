@@ -1,0 +1,278 @@
+/* ==============================================================================
+   🏛️ SMARTCLEARANCE MOBILE — APPLE / VERCEL OBSIDIAN DESIGN SYSTEM
+   Firma: Doğruer Gümrük Müşavirliği A.Ş. & Hankook Lastikleri A.Ş.
+   ============================================================================== */
+
+:root {
+  --bg-pure: #000000;
+  --bg-surface: #09090b;
+  --bg-card: rgba(18, 21, 30, 0.68);
+  --bg-card-hover: rgba(28, 33, 48, 0.78);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-active: rgba(56, 189, 248, 0.35);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent-blue: #38bdf8;
+  --accent-emerald: #10b981;
+  --accent-amber: #f59e0b;
+  --accent-rose: #f43f5e;
+  --accent-purple: #a855f7;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Geist", Inter, sans-serif;
+  --font-mono: "Geist Mono", "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+html, body {
+  background-color: var(--bg-pure);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+  letter-spacing: -0.015em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Glassmorphism Classes */
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:active {
+  transform: scale(0.985);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.glass-pill {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9999px;
+}
+
+/* Header */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Monospace Badges */
+.font-mono-code {
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+}
+
+/* Segmented Horizontal Pill Bar (Apple style) */
+.segmented-bar {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  padding: 4px 16px 12px;
+  scrollbar-width: none;
+}
+.segmented-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.segment-btn {
+  white-space: nowrap;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 9999px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+}
+.segment-btn.active {
+  background: #ffffff;
+  color: #000000;
+  font-weight: 600;
+  border-color: #ffffff;
+}
+
+/* Floating Bottom Navigation Island */
+.floating-bottom-nav {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 440px;
+  background: rgba(12, 14, 20, 0.88);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  padding: 6px 8px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 50;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.nav-item.active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nav-item svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+  transition: stroke 0.2s ease;
+}
+.nav-item.active svg {
+  stroke: var(--accent-blue);
+}
+
+/* Status Indicator Dot */
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--accent-emerald);
+  box-shadow: 0 0 10px var(--accent-emerald);
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 14px var(--accent-emerald); }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+/* iOS Bottom Sheet Modal */
+.bottom-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 90;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.bottom-sheet-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 500px;
+  margin: 0 auto;
+  max-height: 88vh;
+  background: #0d111a;
+  border-top-left-radius: 28px;
+  border-top-right-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: none;
+  z-index: 100;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.bottom-sheet.open {
+  transform: translateY(0);
+}
+
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  margin: 10px auto 4px;
+}
+
+/* Maritime Leaflet Dark styling */
+#mobile-map-container {
+  width: 100%;
+  height: 380px;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  background: #06090f;
+}
+
+.leaflet-container {
+  background: #06090f !important;
+  font-family: var(--font-sans) !important;
+}
+
+.leaflet-bar a {
+  background-color: rgba(18, 22, 33, 0.9) !important;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Custom Pulsing Vessel Marker */
+.vessel-marker-pin {
+  width: 28px;
+  height: 28px;
+  background: rgba(56, 189, 248, 0.25);
+  border: 2px solid #38bdf8;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
+  animation: marker-pulse 2.5s infinite;
+}
+
+@keyframes marker-pulse {
+  0% { box-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
+  50% { box-shadow: 0 0 22px rgba(56, 189, 248, 0.85); }
+  100% { box-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
+}
+
+/* Padding to prevent bottom nav collision */
+.content-bottom-pad {
+  padding-bottom: 96px;
+}

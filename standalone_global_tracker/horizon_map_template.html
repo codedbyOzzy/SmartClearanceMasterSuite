@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartClearance Horizon Map</title>
+  <link rel="stylesheet" href="leaflet.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body, #map { width: 100%; height: 100%; background: #080b11; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+    
+    /* Dark Tile Styling */
+    .leaflet-tile { filter: brightness(0.82) contrast(1.2) hue-rotate(200deg) invert(1); }
+    .leaflet-control-zoom { border: 1px solid rgba(255,255,255,0.12) !important; border-radius: 8px !important; overflow: hidden; background: rgba(15,21,35,0.9) !important; }
+    .leaflet-control-zoom a { background: transparent !important; color: #94a3b8 !important; border-bottom: 1px solid rgba(255,255,255,0.08) !important; }
+    .leaflet-control-zoom a:hover { color: #38bdf8 !important; background: rgba(56,189,248,0.15) !important; }
+    .leaflet-control-attribution { display: none !important; }
+
+    /* Custom Vessel & Port Markers */
+    .vessel-marker {
+      display: flex; align-items: center; justify-content: center;
+      width: 38px; height: 38px; border-radius: 50%;
+      background: radial-gradient(circle, #38bdf8 0%, #0284c7 100%);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.8), 0 0 35px rgba(56, 189, 248, 0.4);
+      border: 2px solid #ffffff;
+      animation: pulse-glow 2s infinite alternate;
+    }
+    @keyframes pulse-glow {
+      0% { transform: scale(0.92); box-shadow: 0 0 12px rgba(56, 189, 248, 0.6); }
+      100% { transform: scale(1.10); box-shadow: 0 0 28px rgba(56, 189, 248, 1); }
+    }
+    .port-marker {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #10b981; border: 2.5px solid #080b11;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.7);
+    }
+    .port-marker-trans {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #f59e0b; border: 2.5px solid #080b11;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.85);
+    }
+    .port-marker-pod {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #f43f5e; border: 3px solid #ffffff;
+      box-shadow: 0 0 16px rgba(244, 63, 94, 0.9);
+    }
+
+    /* Custom Tooltip / Popup */
+    .leaflet-popup-content-wrapper {
+      background: rgba(15, 23, 42, 0.94) !important;
+      backdrop-filter: blur(12px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.14) !important;
+      border-radius: 10px !important;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6) !important;
+      color: #f8fafc !important;
+      padding: 4px !important;
+    }
+    .leaflet-popup-tip { background: rgba(15, 23, 42, 0.94) !important; }
+    .popup-title { font-size: 11px; font-weight: 700; color: #38bdf8; letter-spacing: 0.5px; margin-bottom: 3px; }
+    .popup-desc { font-size: 12.5px; font-weight: 700; color: #f1f5f9; }
+    .popup-flag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin: 4px 0 3px 0;
+      padding: 2px 7px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 5px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+    .popup-date { font-size: 11px; color: #94a3b8; margin-top: 3px; }
+
+    /* Top Overlay Badge */
+    #status-overlay {
+      position: absolute; top: 12px; right: 12px; z-index: 1000;
+      background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px;
+      padding: 7px 13px; color: #e2e8f0; font-size: 11px; font-weight: 600;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981; }
+
+    /* SVG Fallback Canvas if tiles fail */
+    #svg-fallback {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      display: none; z-index: 500; pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="status-overlay">
+    <div class="status-dot"></div>
+    <span id="vessel-badge-text">SmartClearance Horizon Radar</span>
+  </div>
+
+  <div id="map"></div>
+  <svg id="svg-fallback"></svg>
+
+  <script src="leaflet.js"></script>
+  <script>
+    let map = null;
+    let currentLayers = [];
+
+    function initMap() {
+      try {
+        if (typeof L === 'undefined') {
+          console.error("Leaflet library not loaded yet.");
+          return;
+        }
+
+        map = L.map('map', {
+          zoomControl: true,
+          attributionControl: false,
+          minZoom: 3,
+          maxZoom: 18
+        }).setView([37.5, 22.0], 5);
+
+        // OpenStreetMap Dark/Inverted Tile Layer
+        const tileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19
+        });
+        
+        tileLayer.on('tileerror', function() {
+          console.warn("Tile error, relying on vector lines.");
+        });
+
+        tileLayer.addTo(map);
+        console.log("Map initialized successfully.");
+      } catch (err) {
+        console.error("initMap error:", err);
+      }
+    }
+
+    function clearLayers() {
+      if (!map) return;
+      currentLayers.forEach(l => {
+        try { map.removeLayer(l); } catch(e) {}
+      });
+      currentLayers = [];
+    }
+
+    function updateRoute(data) {
+      if (!map) initMap();
+      if (!map || typeof L === 'undefined') return;
+
+      clearLayers();
+      if (!data) return;
+
+      const badgeText = document.getElementById('vessel-badge-text');
+      if (data.vessel_name) {
+        const flagPrefix = data.vessel_flag_emoji ? (data.vessel_flag_emoji + ' ') : '';
+        badgeText.innerText = flagPrefix + data.vessel_name + (data.live_eta ? ' • ' + data.live_eta : '');
+      }
+
+      const latlngs = [];
+
+      // 1. Rota Çizgisi
+      if (data.polyline && data.polyline.length > 0) {
+        data.polyline.forEach(p => latlngs.push(p));
+        const routeLine = L.polyline(data.polyline, {
+          color: '#38bdf8',
+          weight: 4,
+          opacity: 0.9,
+          dashArray: '8, 8',
+          lineCap: 'round'
+        }).addTo(map);
+        currentLayers.push(routeLine);
+      }
+
+      // 2. Liman Durakları
+      if (data.points && data.points.length > 0) {
+        data.points.forEach((pt, idx) => {
+          if (!pt.lat || !pt.lng) return;
+          latlngs.push([pt.lat, pt.lng]);
+
+          const isPod = pt.is_pod || (idx === data.points.length - 1 && !pt.is_pol);
+          const isPol = pt.is_pol || (idx === 0 && !pt.is_pod);
+          const isTrans = pt.is_intermediate || (!isPol && !isPod);
+
+          let iconHtml = '<div class="port-marker"></div>';
+          if (isPod) {
+            iconHtml = '<div class="port-marker-pod"></div>';
+          } else if (isTrans) {
+            iconHtml = '<div class="port-marker-trans"></div>';
+          }
+
+          const customIcon = L.divIcon({
+            className: 'custom-port-icon',
+            html: iconHtml,
+            iconSize: isPod ? [18, 18] : [14, 14],
+            iconAnchor: isPod ? [9, 9] : [7, 7]
+          });
+
+          const m = L.marker([pt.lat, pt.lng], { icon: customIcon }).addTo(map);
+          let titleText = '⚓ ARA UĞRAK / AKTARMA LİMANI';
+          if (isPol) titleText = '🛫 YÜKLEME LİMANI (POL)';
+          else if (isPod) titleText = '🎯 VARIŞ LİMANI (POD)';
+
+          m.bindPopup(`
+            <div class="popup-title">${titleText}</div>
+            <div class="popup-desc">${pt.name || 'Liman'} (${pt.code || ''})</div>
+            ${pt.date ? `<div class="popup-date">Tarih: ${pt.date}</div>` : ''}
+          `);
+          currentLayers.push(m);
+        });
+      }
+
+      // 3. Canlı Gemi Konumu (AIS)
+      if (data.vessel_lat && data.vessel_lng) {
+        const vPos = [data.vessel_lat, data.vessel_lng];
+        latlngs.push(vPos);
+
+        const vIcon = L.divIcon({
+          className: 'custom-vessel-icon',
+          html: '<div class="vessel-marker"><span style="font-size:18px;">🚢</span></div>',
+          iconSize: [38, 38],
+          iconAnchor: [19, 19]
+        });
+
+        let flagHtml = '';
+        if (data.vessel_flag_emoji) {
+          flagHtml = `
+            <div class="popup-flag">
+              <span style="font-size: 14px;">${data.vessel_flag_emoji}</span>
+              <span>Bayrak: <b>${data.vessel_flag_country || ''}</b> <span style="color:#94a3b8; font-size:10.5px;">(${data.vessel_flag_code || ''})</span></span>
+            </div>
+          `;
+        }
+
+        const vMarker = L.marker(vPos, { icon: vIcon }).addTo(map);
+        vMarker.bindPopup(`
+          <div class="popup-title">📡 CANLI GEMİ KONUMU (AIS)</div>
+          <div class="popup-desc"><b>${data.vessel_name || 'Gemi'}</b></div>
+          ${flagHtml}
+          <div class="popup-date">Koordinat: ${data.vessel_lat.toFixed(4)}°, ${data.vessel_lng.toFixed(4)}°</div>
+          ${data.vessel_status ? `<div class="popup-date">Durum: ${data.vessel_status}</div>` : ''}
+        `);
+        currentLayers.push(vMarker);
+        setTimeout(() => { try { vMarker.openPopup(); } catch(e){} }, 400);
+      }
+
+      // Rota sınırlarına yakınlaştır
+      if (latlngs.length > 0) {
+        map.fitBounds(latlngs, { padding: [40, 40], maxZoom: 8 });
+      }
+    }
+
+    // Ekran veya pencere boyutu değiştiğinde Leaflet haritasını anında yeniden hesapla
+    window.addEventListener('resize', () => {
+      if (map && typeof map.invalidateSize === 'function') {
+        map.invalidateSize();
+      }
+    });
+
+    window.refreshMapLayout = function() {
+      if (map && typeof map.invalidateSize === 'function') {
+        map.invalidateSize();
+      }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initMap();
+    });
+  </script>
+</body>
+</html>

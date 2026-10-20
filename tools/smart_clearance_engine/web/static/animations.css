@@ -1,0 +1,97 @@
+/* =========================================================================
+   animations.css — keyframe'ler ve gecis yardimci siniflari.
+   style.css'ten AYRI tutulur ki gorsel/hareket mantigi kod dosyalarindan
+   ayri, tek yerden yonetilsin.
+   ========================================================================= */
+
+@keyframes scan-sweep {
+  0%   { transform: translateX(-120%); }
+  50%  { transform: translateX(180%); }
+  100% { transform: translateX(-120%); }
+}
+
+@keyframes pulse-ring {
+  0%   { opacity: 0.55; transform: scale(0.7); }
+  70%  { opacity: 0; transform: scale(1.6); }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+
+@keyframes page-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.card:nth-of-type(1) { animation-delay: 0.02s; }
+.card:nth-of-type(2) { animation-delay: 0.07s; }
+.card:nth-of-type(3) { animation-delay: 0.12s; }
+.card:nth-of-type(4) { animation-delay: 0.17s; }
+.card:nth-of-type(5) { animation-delay: 0.22s; }
+
+@keyframes chip-in {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ---------- Sayfa gecis (pjax-lite) siniflari ---------- */
+.pc-leaving { animation: pc-out 0.16s ease both; }
+.pc-entering { animation: pc-in 0.24s cubic-bezier(.2,.7,.3,1) both; }
+@keyframes pc-out { to { opacity: 0; transform: translateY(-4px); } }
+@keyframes pc-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ---------- Isleme (processing) ekrani: "tarama" animasyonu ---------- */
+.processing-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 90px 20px;
+  text-align: center;
+  animation: page-fade-in 0.3s ease both;
+}
+.scan-doc {
+  position: relative;
+  width: 96px;
+  height: 124px;
+  background: #fff;
+  border: 2px solid var(--steel-light);
+  border-radius: 6px;
+  margin-bottom: 26px;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+.scan-doc::before, .scan-doc::after {
+  content: "";
+  position: absolute;
+  left: 14px; right: 14px;
+  height: 6px;
+  background: var(--steel-light);
+  border-radius: 3px;
+}
+.scan-doc::before { top: 22px; }
+.scan-doc::after { top: 38px; width: 60%; }
+.scan-doc .scan-beam {
+  position: absolute;
+  left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--seal-red), transparent);
+  box-shadow: 0 0 10px 1px rgba(220,47,62,0.6);
+  animation: scan-beam-move 1.6s ease-in-out infinite;
+}
+@keyframes scan-beam-move {
+  0%   { top: 12px; }
+  50%  { top: 108px; }
+  100% { top: 12px; }
+}
+.processing-title { font-weight: 700; font-size: 1.05rem; margin-bottom: 4px; }
+.processing-sub { color: var(--steel); font-size: 0.9rem; min-height: 1.4em; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

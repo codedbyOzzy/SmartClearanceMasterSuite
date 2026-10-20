@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% if request.query_params.get("hata") == "sablon_bulunamadi" %}
+  <div class="banner banner-error">Sablon dosyasi bulunamadi (beklenmeyen bir durum).
+      Uygulamayi yeniden baslatin; sorun devam ederse "Gelismis" bolumunden
+      elle bir sablon yukleyin.</div>
+{% endif %}
+{% if request.query_params.get("mesaj") == "sablon_guncellendi" %}
+  <div class="banner banner-ok">Sablon guncellendi.</div>
+{% endif %}
+
+<section class="card">
+    <h2>Fatura / Packing List / Konşimento</h2>
+    <p class="hint">Şablon hazır gelir, hiçbir şey yüklemenize gerek yok — dosyaları
+       bırakın, işleyelim.</p>
+    <form action="/islem" method="post" enctype="multipart/form-data" id="islem-form" data-pjax>
+        <div class="dropzone" data-list="pdfler-list">
+            <div class="dz-icon">⬆</div>
+            <div class="dz-text">PDF'leri buraya sürükleyin</div>
+            <div class="dz-sub">veya tıklayıp seçin — birden fazla dosya olabilir</div>
+            <input type="file" name="pdfler" accept="application/pdf" multiple required>
+        </div>
+        <div class="file-chip-list" id="pdfler-list"></div>
+        <button type="submit">İşle</button>
+    </form>
+    <p class="hint">Aynı anda birden fazla fatura yüklerseniz, her fatura numarasına
+       göre ayrılır ve KENDİ ayrı Excel çıktısını alır. Bir faturanın belgeleri
+       (fatura+packing list+konşimento) tek PDF'te olabilir ya da ayrı dosyalar
+       halinde yüklenebilir, sistem fatura numarasından bunları birleştirir.</p>
+</section>
+
+<details class="card">
+    <summary>Gelişmiş: Excel şablonunu değiştir</summary>
+    <p class="hint">Sistem varsayılan olarak sizin verdiğiniz Evrim şablonunu
+       kullanır. Sadece Evrim'in kabul ettiği sütun yapısı/format değişirse
+       burayı kullanın.</p>
+    <p><a href="/sablon-indir">Şu an kullanılan şablonu indir</a></p>
+    {% include "_sablon_form.html" %}
+</details>
+
+{% endblock %}
