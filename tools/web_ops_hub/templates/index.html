@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="top">
+  <h1>Operasyon Web Hub</h1>
+  <p>Yalnızca üç modül — mevcut GTB / Kantar / Kokpit motorlarına bağlı yerel arayüz. Diğer MasterSuite modülleri burada yok.</p>
+</div>
+<div class="hub-grid">
+  <a class="hub-tile" href="/kokpit">
+    <h2>Operasyon Kokpiti</h2>
+    <p>Excel / Evrim / CSV üzerinden dosya aşamaları, vergi bekleyenler ve hat durumu.</p>
+    <span class="go">Aç →</span>
+  </a>
+  <a class="hub-tile" href="/gtb-takip">
+    <h2>GTB Beyanname Takip</h2>
+    <p>Ticaret Bakanlığı otonom takip havuzu, canlı sorgu ve 10 dk tarama.</p>
+    <span class="go">Aç →</span>
+  </a>
+  <a class="hub-tile" href="/kantar-takip">
+    <h2>Kantar DBA Takip</h2>
+    <p>DP World / Yılport kantar tike ve DBA (VGM) otonom izleme.</p>
+    <span class="go">Aç →</span>
+  </a>
+</div>
+<p class="note">Başlatıcı: <code>WEB_OPS_HUB_BASLAT.bat</code> · Adres: <code>http://127.0.0.1:8060</code> · Gümrük verisi içerir; public Pages / açık tünel önermeyiz.</p>
+{% endblock %}

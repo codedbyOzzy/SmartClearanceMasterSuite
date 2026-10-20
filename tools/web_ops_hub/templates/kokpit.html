@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="top">
+  <h1>Operasyon Kokpiti</h1>
+  <p>Excel → Evrim JSON → <code>Operasyon_Kokpiti.csv</code> sırasıyla okunur. Outlook canlı sync masaüstü uygulamasında kalır.</p>
+</div>
+
+<div class="metrics">
+  <div class="metric"><div class="lbl">Toplam</div><div class="val" id="c-total">0</div></div>
+  <div class="metric"><div class="lbl">Aktif</div><div class="val" id="c-active">0</div></div>
+  <div class="metric"><div class="lbl">Vergi bekleyen</div><div class="val" id="c-tax">0</div></div>
+  <div class="metric"><div class="lbl">Kaynak</div><div class="val" style="font-size:0.95rem" id="c-source">—</div></div>
+</div>
+
+<div class="panel">
+  <div class="toolbar">
+    <input id="c-search" type="search" placeholder="Dosya, ref, BL, bayi…" />
+    <div class="filters" id="c-filters">
+      <button type="button" data-f="all" class="active">Tümü</button>
+      <button type="button" data-f="active">Aktif</button>
+      <button type="button" data-f="tax">Vergi bekleyen</button>
+      <button type="button" data-f="tescil">Tescil</button>
+      <button type="button" data-f="red">Kırmızı hat</button>
+      <button type="button" data-f="ordino">Ordino/Tareks</button>
+      <button type="button" data-f="closed">Kapandı</button>
+    </div>
+    <button type="button" class="btn ghost" id="btn-c-yenile">Yenile</button>
+  </div>
+</div>
+
+<div class="panel" style="overflow:auto;">
+  <table class="grid">
+    <thead>
+      <tr>
+        <th>Dosya</th>
+        <th>Referans</th>
+        <th>BL</th>
+        <th>Aşama</th>
+        <th>Hat</th>
+        <th>Bayi</th>
+        <th>Liman</th>
+      </tr>
+    </thead>
+    <tbody id="kokpit-tbody">
+      <tr><td colspan="7" class="empty">Yükleniyor…</td></tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/kokpit.js?v={{ static_v }}"></script>
+{% endblock %}
