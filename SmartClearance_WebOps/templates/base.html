@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ title }} · WebOps</title>
+  <link rel="stylesheet" href="/static/css/site.css?v={{ static_v }}" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand-mark" href="/">Smart<span>Clearance</span></a>
+    <nav class="topnav">
+      <a href="/" class="{% if request.url.path == '/' %}active{% endif %}">Giriş</a>
+      <a href="/kokpit" class="{% if request.url.path.startswith('/kokpit') %}active{% endif %}">Kokpit</a>
+      <a href="/gtb" class="{% if request.url.path.startswith('/gtb') %}active{% endif %}">GTB</a>
+      <a href="/kantar" class="{% if request.url.path.startswith('/kantar') %}active{% endif %}">Kantar</a>
+    </nav>
+  </header>
+  {% block content %}{% endblock %}
+  {% block scripts %}{% endblock %}
+</body>
+</html>

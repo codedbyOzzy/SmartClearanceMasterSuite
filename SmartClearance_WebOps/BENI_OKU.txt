@@ -1,0 +1,32 @@
+================================================================================
+SmartClearance WebOps — HAFIF yerel web paketi
+================================================================================
+
+Bu klasör TEK BAŞINA yeterlidir. Tüm MasterSuite'i indirmeniz gerekmez.
+
+NE İNDİRİLİR?
+  GitHub repo'dan yalnızca "SmartClearance_WebOps" klasörünü alın:
+  - Repo sayfasında SmartClearance_WebOps klasörüne girin
+  - veya tüm repoyu ZIP indirip SmartClearance_WebOps klasörünü dışarı kopyalayın
+  - veya: git clone sonrası sadece bu klasörü kullanın
+
+NASIL AÇILIR?
+  1) Python 3.12 kurulu olsun
+  2) SmartClearance_WebOps\BASLAT.bat dosyasına ÇİFT TIKLAYIN
+  3) Tarayıcıda http://127.0.0.1:8060 açılır
+
+MODÜLLER
+  /        Giriş
+  /kokpit  Operasyon Kokpiti
+  /gtb     GTB Beyanname Takip
+  /kantar  Kantar DBA Takip
+
+VERİ
+  GTB/Kantar havuzu: %LOCALAPPDATA%\SmartClearance\*.json
+  Kokpit: Excel (config) → Evrim JSON → data\Operasyon_Kokpiti.csv
+
+GÜVENLİK
+  Gümrük/müşteri verisi içerir. Public GitHub Pages veya açık internet
+  tüneline bağlamayın. Sadece kendi PC / LAN / VPN.
+
+================================================================================
