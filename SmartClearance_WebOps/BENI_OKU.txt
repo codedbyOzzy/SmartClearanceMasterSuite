@@ -1,32 +1,42 @@
 ================================================================================
-SmartClearance WebOps — HAFIF yerel web paketi
+SmartClearance WebOps — HAFIF tam özellikli yerel web paketi
 ================================================================================
 
-Bu klasör TEK BAŞINA yeterlidir. Tüm MasterSuite'i indirmeniz gerekmez.
+Bu klasör TEK BAŞINA yeterlidir.
 
-NE İNDİRİLİR?
-  GitHub repo'dan yalnızca "SmartClearance_WebOps" klasörünü alın:
-  - Repo sayfasında SmartClearance_WebOps klasörüne girin
-  - veya tüm repoyu ZIP indirip SmartClearance_WebOps klasörünü dışarı kopyalayın
-  - veya: git clone sonrası sadece bu klasörü kullanın
+ÇALIŞTIRMA
+  1) Python 3.12
+  2) BASLAT.bat (çift tık)
+  3) http://127.0.0.1:8060
 
-NASIL AÇILIR?
-  1) Python 3.12 kurulu olsun
-  2) SmartClearance_WebOps\BASLAT.bat dosyasına ÇİFT TIKLAYIN
-  3) Tarayıcıda http://127.0.0.1:8060 açılır
+MODÜLLER VE ÖZELLİKLER
+  /kokpit
+    - Aşama filtreleri, arama, detay paneli
+    - GTB canlı sorgu (beyanname varsa)
+    - CSV dışa aktarım
 
-MODÜLLER
-  /        Giriş
-  /kokpit  Operasyon Kokpiti
-  /gtb     GTB Beyanname Takip
-  /kantar  Kantar DBA Takip
+  /gtb
+    - Manuel ekleme (dosya/ref/firma)
+    - Evrim/Excel otomatik aktarım
+    - Havuzu tara / seçili canlı sorgula
+    - Vergi maili taslağı (mailto + pano)
+    - Çoklu sil / havuzu temizle
+    - Filtre: tümü / işlemde / kapanan
+
+  /kantar
+    - Konteyner ekle (liman seçimi)
+    - Evrim/Excel aktarım
+    - Şimdi tümünü tara / seçili sorgula
+    - Yılport oturum çerezi kaydet
+    - Seçili PDF indir
+    - Hazır tike PDF birleştir
+    - Çoklu sil / havuzu temizle
+    - Filtre: tümü / hazır / bekleyen
 
 VERİ
-  GTB/Kantar havuzu: %LOCALAPPDATA%\SmartClearance\*.json
-  Kokpit: Excel (config) → Evrim JSON → data\Operasyon_Kokpiti.csv
+  %LOCALAPPDATA%\SmartClearance\  (gtb/kantar JSON, Kantar_Tickets PDF)
+  Kokpit: Excel (config.json) → evrim_live_data.json → data\Operasyon_Kokpiti.csv
 
 GÜVENLİK
-  Gümrük/müşteri verisi içerir. Public GitHub Pages veya açık internet
-  tüneline bağlamayın. Sadece kendi PC / LAN / VPN.
-
+  Gümrük verisi — public Pages / açık tünel kullanmayın.
 ================================================================================

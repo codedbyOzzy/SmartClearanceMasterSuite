@@ -1,19 +1,24 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="page">
-  <h1>Operasyon Kokpiti</h1>
-  <p class="sub">Excel / Evrim / paket CSV sırasıyla okunur. Outlook senkronu masaüstü suite’te kalır.</p>
+  <div class="page-head">
+    <div>
+      <h1>Operasyon Kokpiti</h1>
+      <p class="sub">Excel → Evrim → CSV · aşama filtreleri · GTB canlı sorgu · dışa aktarım</p>
+    </div>
+    <span class="status-pill" id="c-source-pill">Kaynak: —</span>
+  </div>
 
   <div class="metrics">
-    <div class="metric"><div class="lbl">Toplam</div><div class="val" id="c-total">0</div></div>
-    <div class="metric"><div class="lbl">Aktif</div><div class="val" id="c-active">0</div></div>
-    <div class="metric"><div class="lbl">Vergi bekleyen</div><div class="val" id="c-tax">0</div></div>
-    <div class="metric"><div class="lbl">Kaynak</div><div class="val" style="font-size:1.1rem" id="c-source">—</div></div>
+    <div class="metric active" data-f="all"><div class="lbl">Toplam</div><div class="val" id="c-total">0</div></div>
+    <div class="metric" data-f="active"><div class="lbl">Aktif</div><div class="val" id="c-active">0</div></div>
+    <div class="metric" data-f="tax"><div class="lbl">Vergi bekleyen</div><div class="val" id="c-tax">0</div></div>
+    <div class="metric" data-f="closed"><div class="lbl">Kapandı</div><div class="val" id="c-closed">0</div></div>
   </div>
 
   <div class="work">
     <div class="toolbar">
-      <input id="c-search" type="search" placeholder="Dosya, ref, BL, bayi…" />
+      <input class="search" id="c-search" type="search" placeholder="Dosya, ref, BL, bayi…" />
       <div class="filters" id="c-filters">
         <button type="button" data-f="all" class="active">Tümü</button>
         <button type="button" data-f="active">Aktif</button>
@@ -23,19 +28,41 @@
         <button type="button" data-f="ordino">Ordino</button>
         <button type="button" data-f="closed">Kapandı</button>
       </div>
-      <button type="button" class="btn ghost" id="btn-c-yenile">Yenile</button>
+      <button type="button" class="btn ghost" id="btn-c-gtb">GTB sorgula</button>
+      <button type="button" class="btn sky" id="btn-c-export">CSV aktar</button>
+      <button type="button" class="btn ghost" id="btn-c-refresh">Yenile</button>
     </div>
   </div>
 
-  <div class="work" style="overflow:auto;">
-    <table class="grid">
-      <thead>
-        <tr>
-          <th>Dosya</th><th>Referans</th><th>BL</th><th>Aşama</th><th>Hat</th><th>Bayi</th><th>Liman</th>
-        </tr>
-      </thead>
-      <tbody id="kokpit-tbody"><tr><td colspan="7" class="empty">Yükleniyor…</td></tr></tbody>
-    </table>
+  <div class="split">
+    <div class="work table-wrap" style="margin:0">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Dosya</th><th>Referans</th><th>BL</th><th>Aşama</th><th>Hat</th><th>Bayi</th><th>Liman</th>
+          </tr>
+        </thead>
+        <tbody id="kokpit-tbody"><tr><td colspan="7" class="empty">Yükleniyor…</td></tr></tbody>
+      </table>
+    </div>
+    <aside class="detail-card" id="c-detail">
+      <h3>Dosya özeti</h3>
+      <p class="note" id="c-detail-empty">Satır seçin.</p>
+      <div id="c-detail-body" hidden>
+        <div class="row"><span>Dosya</span><span class="mono" id="d-dosya">—</span></div>
+        <div class="row"><span>Referans</span><span class="mono" id="d-ref">—</span></div>
+        <div class="row"><span>BL</span><span class="mono" id="d-bl">—</span></div>
+        <div class="row"><span>Aşama</span><span id="d-stage">—</span></div>
+        <div class="row"><span>Hat</span><span id="d-hat">—</span></div>
+        <div class="row"><span>Bayi</span><span id="d-bayi">—</span></div>
+        <div class="row"><span>Liman</span><span id="d-liman">—</span></div>
+        <div class="row"><span>Beyanname</span><span class="mono" id="d-beyan">—</span></div>
+        <div class="row"><span>GTB</span><span id="d-gtb">—</span></div>
+        <div class="btn-row" style="margin-top:12px">
+          <button type="button" class="btn" id="btn-d-gtb">GTB canlı sorgula</button>
+        </div>
+      </div>
+    </aside>
   </div>
 </div>
 {% endblock %}

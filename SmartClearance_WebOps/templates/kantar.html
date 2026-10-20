@@ -1,37 +1,99 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="page">
-  <h1>Kantar DBA Takip</h1>
-  <p class="sub">DP World / Yılport kantar motoru paket içinde. Canlı tarama internet ve liman erişimi ister.</p>
+  <div class="page-head">
+    <div>
+      <h1>Kantar &amp; DBA Takip</h1>
+      <p class="sub">DP World Körfez / Yarımca · Yılport · tike PDF indir &amp; birleştir · Evrim/Excel aktarım</p>
+    </div>
+    <span class="status-pill" id="k-status">Otonom izleme</span>
+  </div>
 
   <div class="metrics">
-    <div class="metric"><div class="lbl">Toplam</div><div class="val" id="k-total">0</div></div>
-    <div class="metric"><div class="lbl">Hazır</div><div class="val" id="k-ready">0</div></div>
-    <div class="metric"><div class="lbl">Bekleyen</div><div class="val" id="k-pending">0</div></div>
-    <div class="metric"><div class="lbl">Son tarama</div><div class="val" style="font-size:1rem" id="k-scan">—</div></div>
+    <div class="metric active" data-f="ALL"><div class="lbl">Toplam</div><div class="val" id="k-total">0</div></div>
+    <div class="metric" data-f="READY"><div class="lbl">Tartım hazır</div><div class="val" id="k-ready">0</div></div>
+    <div class="metric" data-f="PENDING"><div class="lbl">Bekleyen</div><div class="val" id="k-pending">0</div></div>
+    <div class="metric" data-f="ALL"><div class="lbl">Son tarama</div><div class="val" style="font-size:1.05rem" id="k-scan">—</div></div>
   </div>
 
   <div class="work">
-    <div class="toolbar stack">
-      <label for="txt-konteynerler"><strong>Konteyner ekle</strong></label>
-      <textarea id="txt-konteynerler" placeholder="HAMU4241680"></textarea>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button type="button" class="btn" id="btn-k-ekle">Takibe Ekle</button>
-        <button type="button" class="btn ghost" id="btn-k-tara">Havuzu Tara</button>
-        <button type="button" class="btn ghost" id="btn-k-yenile">Yenile</button>
+    <div class="toolbar">
+      <input class="search" id="k-search" type="search" placeholder="Konteyner, dosya, plaka, firma…" />
+      <div class="btn-row">
+        <button type="button" class="btn" id="btn-k-add">Konteyner ekle</button>
+        <button type="button" class="btn sky" id="btn-k-sync">Evrim/Excel aktar</button>
+        <button type="button" class="btn ghost" id="btn-k-scan">Şimdi tümünü tara</button>
+        <button type="button" class="btn ghost" id="btn-k-yilport">Yılport oturumu</button>
+        <button type="button" class="btn signal" id="btn-k-pdf">Seçili PDF indir</button>
+        <button type="button" class="btn" id="btn-k-merge" style="background:#0f766e">PDF birleştir</button>
+        <button type="button" class="btn ghost" id="btn-k-query">Seçili sorgula</button>
+        <button type="button" class="btn danger" id="btn-k-del">Seçilileri sil</button>
+        <button type="button" class="btn danger" id="btn-k-clear">Havuzu temizle</button>
+        <button type="button" class="btn ghost" id="btn-k-refresh">Yenile</button>
       </div>
     </div>
+    <p class="note" id="k-yilport-note">Yılport oturumu: kontrol ediliyor…</p>
   </div>
 
-  <div class="work" style="overflow:auto;">
+  <div class="work table-wrap">
     <table class="grid">
       <thead>
         <tr>
-          <th>Konteyner</th><th>Dosya</th><th>Kaynak</th><th>DBA / Durum</th><th>Son Kontrol</th><th style="text-align:center;">İşlem</th>
+          <th><input type="checkbox" id="k-check-all" title="Tümü" /></th>
+          <th>Konteyner</th>
+          <th>Dosya</th>
+          <th>Liman</th>
+          <th>Tartım No</th>
+          <th>Tarih</th>
+          <th>Plaka</th>
+          <th>Firma</th>
+          <th>DBA / VGM</th>
+          <th>Durum</th>
+          <th>Son kontrol</th>
+          <th></th>
         </tr>
       </thead>
-      <tbody id="kantar-tbody"><tr><td colspan="6" class="empty">Yükleniyor…</td></tr></tbody>
+      <tbody id="kantar-tbody"><tr><td colspan="12" class="empty">Yükleniyor…</td></tr></tbody>
     </table>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-k-add">
+  <div class="modal">
+    <h3>Konteyner ekle</h3>
+    <label>Konteyner no (satır veya virgülle birden fazla)</label>
+    <textarea id="k-add-cntrs" placeholder="HAMU4241680"></textarea>
+    <label>Dosya no</label>
+    <input id="k-add-dosya" placeholder="26-110407" />
+    <label>Referans</label>
+    <input id="k-add-ref" />
+    <label>Firma</label>
+    <input id="k-add-firma" value="WH-HANKOOK" />
+    <label>Liman / kaynak</label>
+    <select id="k-add-kaynak">
+      <option value="manuel">Otomatik / Manuel</option>
+      <option value="Körfez">Körfez</option>
+      <option value="Yarımca">Yarımca</option>
+      <option value="Yılport">Yılport</option>
+    </select>
+    <div class="actions">
+      <button type="button" class="btn ghost" data-close="modal-k-add">İptal</button>
+      <button type="button" class="btn" id="k-add-save">Havuza ekle</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-k-yilport">
+  <div class="modal">
+    <h3>Yılport oturumu</h3>
+    <p class="note">Yılport’u tarayıcıda açıp giriş yapın, DevTools → Application → Cookies veya <code>document.cookie</code> çıktısını yapıştırın.</p>
+    <label>Çerez metni</label>
+    <textarea id="k-cookie" placeholder="name=value; name2=value2" style="min-height:100px"></textarea>
+    <div class="actions">
+      <a class="btn ghost" href="https://online.yilport.com/TRGEB/Unit" target="_blank" rel="noopener">Yılport’u aç</a>
+      <button type="button" class="btn ghost" data-close="modal-k-yilport">İptal</button>
+      <button type="button" class="btn" id="k-cookie-save">Oturumu kaydet</button>
+    </div>
   </div>
 </div>
 {% endblock %}
