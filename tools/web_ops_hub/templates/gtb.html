@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="top">
+  <h1>GTB Beyanname Takip</h1>
+  <p>Mevcut <code>tools/gtb_engine</code> motoruna bağlı. Captcha çözümü ve canlı sorgu PC’de çalışır.</p>
+</div>
+
+<div class="metrics">
+  <div class="metric"><div class="lbl">Toplam</div><div class="val" id="ozet-toplam">0</div></div>
+  <div class="metric"><div class="lbl">İşlemde</div><div class="val" id="ozet-islemde">0</div></div>
+  <div class="metric"><div class="lbl">Tamamlandı</div><div class="val" id="ozet-tamamlandi">0</div></div>
+  <div class="metric"><div class="lbl">Son yenileme</div><div class="val" style="font-size:0.95rem" id="son-guncelleme-saat">—</div></div>
+</div>
+
+<div class="panel">
+  <div class="toolbar" style="flex-direction:column; align-items:stretch;">
+    <label for="txt-beyannameler"><strong>Beyanname ekle</strong> (satır veya virgülle birden fazla)</label>
+    <textarea id="txt-beyannameler" placeholder="26410300IM00046507"></textarea>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button type="button" class="btn" onclick="topluTakibeEkle(this)">Takibe Ekle</button>
+      <button type="button" class="btn ghost" onclick="tekliAnlikSorgula()">Anlık Sorgula</button>
+      <button type="button" class="btn ghost" onclick="tumunuKontrolEt(false)">Havuzu Tara</button>
+      <button type="button" class="btn ghost" onclick="listeyiYenile(true)">Yenile</button>
+    </div>
+  </div>
+</div>
+
+<div class="panel" style="overflow:auto;">
+  <table class="grid">
+    <thead>
+      <tr>
+        <th>Beyanname No</th>
+        <th>Durum</th>
+        <th>Son Kontrol</th>
+        <th>Kaynak</th>
+        <th style="text-align:center;">İşlem</th>
+      </tr>
+    </thead>
+    <tbody id="beyanname-tablo-govde">
+      <tr><td colspan="5" class="empty">Yükleniyor…</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div id="modalCanliSonuc" class="modal-bg" onclick="if(event.target===this)kapatCanliModal()">
+  <div class="modal">
+    <div id="canli-sorgu-icerik">Sorgu…</div>
+    <button type="button" class="btn ghost" style="margin-top:16px;" onclick="kapatCanliModal()">Kapat</button>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/gtb_takip.js?v={{ static_v }}"></script>
+{% endblock %}
