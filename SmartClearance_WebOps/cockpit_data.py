@@ -252,3 +252,59 @@ def extract_beyanname_candidates(text: str) -> List[str]:
             seen.add(clean)
             found.append(clean)
     return found
+
+
+def load_evrim_raw() -> List[Dict[str, Any]]:
+    """GTB/Kantar auto_sync için ham Evrim listesi."""
+    data = _load_json(EVRIM_PATH, [])
+    return data if isinstance(data, list) else []
+
+
+def load_excel_raw_for_sync() -> List[Dict[str, Any]]:
+    """Kantar sync için Excel satırlarını konteyner alanıyla döner."""
+    try:
+        import openpyxl
+    except ImportError:
+        return []
+
+    cfg = CONFIG_DIR / "config.json"
+    excel_path = ""
+    if cfg.exists():
+        try:
+            excel_path = str((_load_json(cfg, {}) or {}).get("excel_path") or "")
+        except Exception:
+            excel_path = ""
+    if not excel_path or not os.path.exists(excel_path):
+        return []
+
+    out: List[Dict[str, Any]] = []
+    try:
+        wb = openpyxl.load_workbook(excel_path, data_only=True)
+        sheet = "GÜNCEL RAPOR" if "GÜNCEL RAPOR" in wb.sheetnames else wb.sheetnames[0]
+        ws = wb[sheet]
+        for r in range(2, ws.max_row + 1):
+            dosya = str(ws.cell(r, 1).value or "").strip()
+            ref = str(ws.cell(r, 3).value or "").strip()
+            bayi = str(ws.cell(r, 4).value or "").strip()
+            liman = str(ws.cell(r, 22).value or "").strip()
+            konteyner = str(ws.cell(r, 21).value or "").strip()
+            beyan = ""
+            # Evrim eşlemesi için beyanname yoksa boş
+            if not (dosya or ref or konteyner):
+                continue
+            out.append(
+                {
+                    "dosya": dosya,
+                    "dosya_no": dosya,
+                    "ref": ref,
+                    "hankook_ref": ref,
+                    "bayi": bayi,
+                    "liman": liman,
+                    "konteyner": konteyner,
+                    "beyanname_no": beyan,
+                }
+            )
+            # GTB sync için de beyanname sütunu varsa (bazı şablonlarda farklı) — atlanır
+    except Exception:
+        return []
+    return out

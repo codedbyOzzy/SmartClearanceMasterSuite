@@ -1,45 +1,82 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="page">
-  <h1>GTB Beyanname Takip</h1>
-  <p class="sub">Ticaret Bakanlığı sorgu motoru bu paketin içinde çalışır (captcha OCR dahil).</p>
+  <div class="page-head">
+    <div>
+      <h1>GTB Beyanname Takip</h1>
+      <p class="sub">Ticaret Bakanlığı canlı sorgu · captcha OCR · Evrim/Excel aktarım · vergi mail taslağı</p>
+    </div>
+    <span class="status-pill" id="g-status">Otonom izleme</span>
+  </div>
 
   <div class="metrics">
-    <div class="metric"><div class="lbl">Toplam</div><div class="val" id="ozet-toplam">0</div></div>
-    <div class="metric"><div class="lbl">İşlemde</div><div class="val" id="ozet-islemde">0</div></div>
-    <div class="metric"><div class="lbl">Tamamlandı</div><div class="val" id="ozet-tamamlandi">0</div></div>
-    <div class="metric"><div class="lbl">Son yenileme</div><div class="val" style="font-size:1rem" id="son-guncelleme-saat">—</div></div>
+    <div class="metric active" data-f="ALL"><div class="lbl">Toplam</div><div class="val" id="g-total">0</div></div>
+    <div class="metric" data-f="IN_PROC"><div class="lbl">İşlemde</div><div class="val" id="g-proc">0</div></div>
+    <div class="metric" data-f="CLOSED"><div class="lbl">Kapanan</div><div class="val" id="g-closed">0</div></div>
+    <div class="metric" data-f="ALL"><div class="lbl">Son tarama</div><div class="val" style="font-size:1.05rem" id="g-scan">—</div></div>
   </div>
 
   <div class="work">
-    <div class="toolbar stack">
-      <label for="txt-beyannameler"><strong>Beyanname ekle</strong></label>
-      <textarea id="txt-beyannameler" placeholder="26410300IM00046507"></textarea>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button type="button" class="btn" onclick="topluTakibeEkle(this)">Takibe Ekle</button>
-        <button type="button" class="btn ghost" onclick="tekliAnlikSorgula()">Anlık Sorgula</button>
-        <button type="button" class="btn ghost" onclick="tumunuKontrolEt(false)">Havuzu Tara</button>
-        <button type="button" class="btn ghost" onclick="listeyiYenile(true)">Yenile</button>
+    <div class="toolbar">
+      <input class="search" id="g-search" type="search" placeholder="Beyanname, dosya, ref, firma…" />
+      <div class="btn-row">
+        <button type="button" class="btn" id="btn-g-add">Manuel ekle</button>
+        <button type="button" class="btn sky" id="btn-g-sync">Evrim/Excel aktar</button>
+        <button type="button" class="btn ghost" id="btn-g-scan">Şimdi tümünü tara</button>
+        <button type="button" class="btn ghost" id="btn-g-query">Seçili sorgula</button>
+        <button type="button" class="btn signal" id="btn-g-mail">Vergi maili taslağı</button>
+        <button type="button" class="btn ghost" id="btn-g-copy">Seçilileri kopyala</button>
+        <button type="button" class="btn danger" id="btn-g-del">Seçilileri sil</button>
+        <button type="button" class="btn danger" id="btn-g-clear">Havuzu temizle</button>
+        <button type="button" class="btn ghost" id="btn-g-refresh">Yenile</button>
       </div>
     </div>
   </div>
 
-  <div class="work" style="overflow:auto;">
+  <div class="work table-wrap">
     <table class="grid">
       <thead>
         <tr>
-          <th>Beyanname No</th><th>Durum</th><th>Son Kontrol</th><th>Kaynak</th><th style="text-align:center;">İşlem</th>
+          <th><input type="checkbox" id="g-check-all" /></th>
+          <th>Beyanname No</th>
+          <th>Dosya</th>
+          <th>Referans</th>
+          <th>Firma</th>
+          <th>Durum</th>
+          <th>Son kontrol</th>
+          <th>Değişim</th>
+          <th></th>
         </tr>
       </thead>
-      <tbody id="beyanname-tablo-govde"><tr><td colspan="5" class="empty">Yükleniyor…</td></tr></tbody>
+      <tbody id="gtb-tbody"><tr><td colspan="9" class="empty">Yükleniyor…</td></tr></tbody>
     </table>
   </div>
 </div>
 
-<div id="modalCanliSonuc" class="modal-bg" onclick="if(event.target===this)kapatCanliModal()">
+<div class="modal-bg" id="modal-g-add">
   <div class="modal">
+    <h3>Beyanname ekle</h3>
+    <label>16 haneli beyanname (birden fazla satır)</label>
+    <textarea id="g-add-text" placeholder="26410300IM00046507"></textarea>
+    <label>Dosya no</label>
+    <input id="g-add-dosya" />
+    <label>Referans</label>
+    <input id="g-add-ref" />
+    <label>Firma</label>
+    <input id="g-add-firma" value="WH-HANKOOK" />
+    <div class="actions">
+      <button type="button" class="btn ghost" data-close="modal-g-add">İptal</button>
+      <button type="button" class="btn" id="g-add-save">Havuza ekle</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalCanliSonuc">
+  <div class="modal center">
     <div id="canli-sorgu-icerik">Sorgu…</div>
-    <button type="button" class="btn ghost" style="margin-top:16px;" onclick="kapatCanliModal()">Kapat</button>
+    <div class="actions" style="justify-content:center">
+      <button type="button" class="btn ghost" onclick="document.getElementById('modalCanliSonuc').classList.remove('acik')">Kapat</button>
+    </div>
   </div>
 </div>
 {% endblock %}

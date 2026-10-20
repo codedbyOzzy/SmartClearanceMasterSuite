@@ -1,357 +1,230 @@
-// gtb_takip.js — GTB Otonom Beyanname Takibi ve Canlı Bakanlık Sorgusu Sayfa Kontrolcüsü (Glassmorphism UI)
+let gFilter = "ALL";
+let gSearch = "";
 
-let tumBeyannameler = [];
-
-function initGtbTakipSayfasi() {
-  const gtbTablo = document.getElementById("beyanname-tablo-govde");
-  if (!gtbTablo) return; // GTB Takip sayfasında değilsek işlem yapma
-  listeyiYenile(false);
+function toast(msg, tip) {
+  const el = document.createElement("div");
+  el.className = "toast" + (tip === "err" ? " err" : "");
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3800);
+}
+function openModal(id) { document.getElementById(id)?.classList.add("acik"); }
+function closeModal(id) { document.getElementById(id)?.classList.remove("acik"); }
+function selectedBeyans() {
+  return [...document.querySelectorAll("#gtb-tbody input.row-check:checked")].map((x) => x.value);
+}
+function durumPill(kapandi, durum) {
+  const d = (durum || "").toLowerCase();
+  let cls = "info";
+  if (kapandi || d.includes("kapan") || d.includes("tamamlan")) cls = "ok";
+  else if (d.includes("kırmızı") || d.includes("hata") || d.includes("bloke")) cls = "bad";
+  else if (d.includes("işlemde") || d.includes("bekliyor") || d.includes("tescil")) cls = "warn";
+  return `<span class="pill ${cls}">${durum || "—"}</span>`;
 }
 
-// Sayfa ilk açıldığında veya PJAX navigasyonundan sonra otomatik çalıştır
-document.addEventListener("DOMContentLoaded", initGtbTakipSayfasi);
-document.addEventListener("pjax:success", initGtbTakipSayfasi);
-
-window.listeyiYenile = async function(gosterBildirim = false) {
-  const gtbTablo = document.getElementById("beyanname-tablo-govde");
-  if (!gtbTablo) return;
-
+async function gtbYenile() {
+  const tbody = document.getElementById("gtb-tbody");
+  const url = `/api/gtb/takip/listele?filtre=${encodeURIComponent(gFilter)}&q=${encodeURIComponent(gSearch)}`;
   try {
-    const res = await fetch("/api/gtb/takip/listele?sadece_aktif=true", {
-      cache: "no-store",
-      headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" }
+    const res = await fetch(url, { cache: "no-store" });
+    const data = await res.json();
+    const st = data.stats || {};
+    document.getElementById("g-total").textContent = st.total ?? 0;
+    document.getElementById("g-proc").textContent = st.in_proc ?? 0;
+    document.getElementById("g-closed").textContent = st.closed ?? 0;
+    document.getElementById("g-scan").textContent = st.last_scan || "—";
+    const status = document.getElementById("g-status");
+    status.textContent = st.scanning ? "Tarama sürüyor…" : (gFilter === "CLOSED" ? "Filtre: Kapananlar" : gFilter === "IN_PROC" ? "Filtre: İşlemde" : "10 dk otonom izleme");
+    status.classList.toggle("warn", !!st.scanning || gFilter === "IN_PROC");
+
+    // legacy ids for compatibility
+    const o1 = document.getElementById("ozet-toplam");
+    if (o1) o1.textContent = st.total ?? 0;
+
+    const items = data.beyannameler || [];
+    if (!items.length) {
+      tbody.innerHTML = '<tr><td colspan="9" class="empty">Havuz boş. Manuel ekleyin veya Evrim/Excel’den aktarın.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = items.map((it) => {
+      const b = it.beyanname_no || "";
+      return `<tr data-b="${b}">
+        <td><input type="checkbox" class="row-check" value="${b}" /></td>
+        <td class="mono"><strong>${b}</strong></td>
+        <td class="mono">${it.dosya_no || "—"}</td>
+        <td class="mono">${it.ref || "—"}</td>
+        <td>${it.firma || "—"}</td>
+        <td>${durumPill(it.kapandi, it.durum)}</td>
+        <td>${it.son_kontrol || "—"}</td>
+        <td>${it.degisim_tarihi || "—"}</td>
+        <td style="white-space:nowrap">
+          <button type="button" class="icon-btn" title="Canlı sorgula" data-q="${b}">🔍</button>
+          <button type="button" class="icon-btn" title="Sil" data-del="${b}">✕</button>
+        </td>
+      </tr>`;
+    }).join("");
+
+    tbody.querySelectorAll("[data-q]").forEach((b) => b.addEventListener("click", () => canliSorgula(b.dataset.q)));
+    tbody.querySelectorAll("[data-del]").forEach((b) => b.addEventListener("click", () => gtbSil(b.dataset.del)));
+    tbody.querySelectorAll("tr[data-b]").forEach((tr) => {
+      tr.addEventListener("click", (e) => {
+        if (e.target.closest("input,button")) return;
+        const cb = tr.querySelector(".row-check");
+        if (cb) { cb.checked = !cb.checked; tr.classList.toggle("selected", cb.checked); }
+      });
     });
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="9" class="empty">Liste hatası: ${e}</td></tr>`;
+  }
+}
+
+async function canliSorgula(no) {
+  const modal = document.getElementById("modalCanliSonuc");
+  const box = document.getElementById("canli-sorgu-icerik");
+  modal.classList.add("acik");
+  box.innerHTML = `<p class="mono">${no}</p><p>GTB’ye bağlanılıyor, captcha çözülüyor…</p>`;
+  try {
+    const res = await fetch(`/api/gtb/takip/sorgula/${encodeURIComponent(no)}`);
     const data = await res.json();
     if (data.success) {
-      tumBeyannameler = data.beyannameler || [];
-      tabloyuCiz(tumBeyannameler);
-      istatistikleriGuncelle(tumBeyannameler);
-      const saat = new Date().toLocaleTimeString("tr-TR");
-      const saatEl = document.getElementById("son-guncelleme-saat");
-      if (saatEl) saatEl.textContent = "Son Yenileme: " + saat;
-      if (gosterBildirim) {
-        showToast("Liste başarıyla yenilendi.", "ok");
-      }
-    }
-  } catch (err) {
-    console.error("GTB listesi alınırken hata:", err);
-  }
-};
-
-function istatistikleriGuncelle(liste) {
-  let islemde = 0;
-  let tamamlandi = 0;
-  liste.forEach(item => {
-    const durumMetni = (item.durum || item.son_durum || "").toLowerCase();
-    if (item.kapanma_tarihi || durumMetni.includes("kapanm") || durumMetni.includes("tamamlan")) {
-      tamamlandi++;
+      box.innerHTML = `<div style="font-size:2rem">✅</div><p class="mono"><strong>${no}</strong></p>
+        ${durumPill(data.kapandi, data.durum)}
+        <p class="note" style="margin-top:12px">${data.timestamp || ""}</p>`;
+      gtbYenile();
     } else {
-      islemde++;
+      box.innerHTML = `<div style="font-size:2rem">❌</div><p><strong>Sorgu hatası</strong></p><p class="note">${data.error || "Bilinmeyen hata"}</p>`;
     }
+  } catch {
+    box.innerHTML = `<p>Bağlantı hatası</p>`;
+  }
+}
+
+async function gtbSil(no) {
+  if (!confirm(`${no} silinsin mi?`)) return;
+  const res = await fetch(`/api/gtb/takip/sil/${encodeURIComponent(no)}`, { method: "POST" });
+  const data = await res.json();
+  if (data.success) { toast("Silindi"); gtbYenile(); }
+  else toast(data.error || "Silinemedi", "err");
+}
+
+// aliases expected by older snippets
+window.canliSorgula = canliSorgula;
+window.listeyiYenile = () => gtbYenile();
+window.topluTakibeEkle = async function () {};
+window.tumunuKontrolEt = async function () {};
+window.tekliAnlikSorgula = function () {};
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (!document.getElementById("gtb-tbody")) return;
+
+  document.querySelectorAll(".metric[data-f]").forEach((m) => {
+    m.addEventListener("click", () => {
+      gFilter = m.dataset.f;
+      document.querySelectorAll(".metric[data-f]").forEach((x) => x.classList.toggle("active", x === m));
+      gtbYenile();
+    });
   });
-  
-  // Count up animation logic
-  animateValue("ozet-toplam", parseInt(document.getElementById("ozet-toplam")?.innerText || 0), liste.length, 500);
-  animateValue("ozet-islemde", parseInt(document.getElementById("ozet-islemde")?.innerText || 0), islemde, 500);
-  animateValue("ozet-tamamlandi", parseInt(document.getElementById("ozet-tamamlandi")?.innerText || 0), tamamlandi, 500);
-}
 
-function animateValue(id, start, end, duration) {
-    if (start === end) return;
-    const obj = document.getElementById(id);
-    if (!obj) return;
-    let startTimestamp = null;
-    const step = (timestamp) => {
-        if (!startTimestamp) startTimestamp = timestamp;
-        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-        obj.innerHTML = Math.floor(progress * (end - start) + start);
-        if (progress < 1) {
-            window.requestAnimationFrame(step);
-        } else {
-            obj.innerHTML = end;
-        }
+  let t;
+  document.getElementById("g-search").addEventListener("input", (e) => {
+    clearTimeout(t);
+    t = setTimeout(() => { gSearch = e.target.value || ""; gtbYenile(); }, 220);
+  });
+  document.getElementById("g-check-all").addEventListener("change", (e) => {
+    document.querySelectorAll("#gtb-tbody .row-check").forEach((c) => { c.checked = e.target.checked; });
+  });
+  document.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => closeModal(b.dataset.close)));
+  document.querySelectorAll(".modal-bg").forEach((bg) => {
+    bg.addEventListener("click", (e) => { if (e.target === bg) bg.classList.remove("acik"); });
+  });
+
+  document.getElementById("btn-g-add").onclick = () => openModal("modal-g-add");
+  document.getElementById("btn-g-refresh").onclick = () => gtbYenile();
+
+  document.getElementById("g-add-save").onclick = async () => {
+    const body = {
+      beyannameler: document.getElementById("g-add-text").value,
+      dosya_no: document.getElementById("g-add-dosya").value,
+      ref: document.getElementById("g-add-ref").value,
+      firma: document.getElementById("g-add-firma").value,
     };
-    window.requestAnimationFrame(step);
-}
+    const res = await fetch("/api/gtb/takip/ekle", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (data.success) {
+      toast(`${data.eklenen_sayisi} eklendi`);
+      closeModal("modal-g-add");
+      document.getElementById("g-add-text").value = "";
+      gtbYenile();
+      if (data.eklenenler?.[0]) canliSorgula(data.eklenenler[0]);
+    } else toast(data.error || "Eklenemedi", "err");
+  };
 
-function tabloyuCiz(liste) {
-  const tbody = document.getElementById("beyanname-tablo-govde");
-  if (!tbody) return;
+  document.getElementById("btn-g-sync").onclick = async () => {
+    toast("Evrim/Excel aktarılıyor…");
+    const res = await fetch("/api/gtb/takip/sync", { method: "POST" });
+    const data = await res.json();
+    if (data.success) { toast(`${data.eklenen || 0} beyanname aktarıldı`); gtbYenile(); }
+    else toast(data.error || "Aktarım hatası", "err");
+  };
 
-  if (!liste || liste.length === 0) {
-    tbody.innerHTML = `
-      <tr class="fade-in">
-        <td colspan="5" style="text-align: center; padding: 60px 0; color: #64748b; background: transparent !important; border: none !important;">
-          <div style="font-size: 3rem; margin-bottom: 12px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.05));">📭</div>
-          <div style="font-size: 1.1rem; font-weight: 500;">Henüz takip listesinde beyanname bulunmuyor.</div>
-          <div style="font-size: 0.95rem; margin-top: 8px;">Sol panelden ekleyebilirsiniz.</div>
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  tbody.innerHTML = liste.map((item, index) => {
-    let durumMetni = item.durum || item.son_durum || "Bekleniyor...";
-    let rozetSinifi = "st-pill";
-
-    if (item.kapanma_tarihi || durumMetni.toLowerCase().includes("kapanm") || durumMetni.toLowerCase().includes("tamamlan")) {
-      rozetSinifi = "st-pill st-tamam";
-    } else if (durumMetni.toLowerCase().includes("işlemde") || durumMetni.toLowerCase().includes("islemde") || durumMetni.toLowerCase().includes("bekliyor")) {
-      rozetSinifi = "st-pill st-islemde";
-    } else {
-      rozetSinifi = "st-pill st-hata"; // varsayılan
-    }
-
-    const zamanMetni = item.son_kontrol_zamani || item.son_kontrol || item.durum_degisim_tarihi || "Kontrol Edilmedi";
-    const ekleyenMetni = item.ekleyen_kullanici || "Sistem";
-    const delay = index * 0.05; // Staggered fade in
-
-    return `
-      <tr class="fade-in" style="animation-delay: ${delay}s;">
-        <td>
-          <strong style="font-family: monospace; font-size: 1.05rem; color: #1e293b; letter-spacing: 0.03em;">${item.beyanname_no}</strong>
-        </td>
-        <td>
-          <span class="${rozetSinifi}">
-            <span class="dot"></span>
-            <span>${durumMetni}</span>
-          </span>
-        </td>
-        <td style="color: #64748b; font-size: 0.9rem;">
-          ${zamanMetni}
-        </td>
-        <td>
-          <span style="display:inline-block; padding:4px 10px; background:#f1f5f9; color:#475569; border-radius:8px; font-size:0.85rem; font-weight:600;">${ekleyenMetni}</span>
-        </td>
-        <td style="text-align: center; white-space: nowrap;">
-          <button type="button" class="btn-action" style="color: #3b82f6;" title="Canlı Sorgula" onclick="canliSorgula('${item.beyanname_no}')">🔍</button>
-          <button type="button" class="btn-action red" style="color: #ef4444;" title="Takipten Çıkar" onclick="takiptenSil('${item.beyanname_no}')">✕</button>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
-
-window.topluTakibeEkle = async function(btnEl) {
-  const metinEl = document.getElementById("txt-beyannameler");
-  if (!metinEl) return;
-  const metin = metinEl.value.trim();
-  if (!metin) {
-    showToast("Lütfen en az bir beyanname numarası girin.", "err");
-    return;
-  }
-
-  const btn = btnEl || document.querySelector("button[onclick*='topluTakibeEkle']");
-  const originalHtml = btn ? btn.innerHTML : "Ekle";
-  if (btn) {
+  document.getElementById("btn-g-scan").onclick = async () => {
+    const btn = document.getElementById("btn-g-scan");
     btn.disabled = true;
-    btn.innerHTML = `<span class="spinner" style="width:20px;height:20px;border-width:2px;margin:0;"></span> <span>Ekleniyor...</span>`;
-  }
+    toast("GTB havuzu taranıyor…");
+    try {
+      const res = await fetch("/api/gtb/takip/kontrol-et", { method: "POST" });
+      const data = await res.json();
+      toast(data.success ? `Tarama tamam (${data.total_checked || 0})` : (data.error || "Hata"), data.success ? undefined : "err");
+      await gtbYenile();
+    } finally { btn.disabled = false; }
+  };
 
-  try {
-    const res = await fetch("/api/gtb/takip/ekle", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        beyannameler: metin,
-        ekleyen_kullanici: "Otonom"
-      })
+  document.getElementById("btn-g-query").onclick = async () => {
+    const sel = selectedBeyans();
+    if (!sel.length) return toast("Sorgulanacak satır seçin", "err");
+    for (const b of sel) await canliSorgula(b);
+  };
+
+  document.getElementById("btn-g-mail").onclick = async () => {
+    const sel = selectedBeyans();
+    if (!sel.length) return toast("Mail için satır seçin", "err");
+    const res = await fetch("/api/gtb/takip/vergi-mail-taslak", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ beyannameler: sel }),
     });
     const data = await res.json();
-    const eklenenAdet = data.eklenen_sayisi || data.eklenen || 0;
-    if (data.success && eklenenAdet > 0) {
-      showToast(`${eklenenAdet} adet beyanname takibe eklendi!`, "ok");
-      metinEl.value = "";
-      await listeyiYenile(true);
-      
-      const ilkEklenen = (data.eklenenler && data.eklenenler[0]) ? data.eklenenler[0] : null;
-      if (ilkEklenen) {
-        canliSorgula(ilkEklenen);
-      } else {
-        tumunuKontrolEt(true);
-      }
-    } else {
-      showToast(data.error || "Geçerli bir beyanname numarası bulunamadı.", "err");
-    }
-  } catch (err) {
-    showToast("Bağlantı hatası: " + err, "err");
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = originalHtml;
-    }
-  }
-};
-
-window.takiptenSil = async function(beyannameNo) {
-  if (!confirm(`${beyannameNo} numaralı beyannameyi takipten çıkarmak istediğinize emin misiniz?`)) return;
-  try {
-    const res = await fetch(`/api/gtb/takip/sil/${beyannameNo}`, { method: "POST" });
-    const data = await res.json();
     if (data.success) {
-      showToast("Beyanname takipten kaldırıldı.", "ok");
-      listeyiYenile(false);
-    }
-  } catch (err) {
-    showToast("Silme hatası.", "err");
-  }
-};
+      try { await navigator.clipboard.writeText(data.body); toast("Mail metni panoya kopyalandı"); } catch { /* ignore */ }
+      window.location.href = data.mailto;
+    } else toast(data.error || "Taslak oluşturulamadı", "err");
+  };
 
-window.tumunuKontrolEt = async function(sessiz = false) {
-  if (!sessiz) {
-    showToast("Bakanlık sistemi taranıyor, otonom süreç başladı...", "ok");
-  }
-  try {
-    const res = await fetch("/api/gtb/takip/kontrol-et", { method: "POST" });
+  document.getElementById("btn-g-copy").onclick = async () => {
+    const sel = selectedBeyans();
+    if (!sel.length) return toast("Kopyalanacak satır seçin", "err");
+    const text = sel.join("\n");
+    try { await navigator.clipboard.writeText(text); toast("Kopyalandı"); }
+    catch { toast("Pano erişilemedi", "err"); }
+  };
+
+  document.getElementById("btn-g-del").onclick = async () => {
+    const sel = selectedBeyans();
+    if (!sel.length) return toast("Silinecek satır seçin", "err");
+    if (!confirm(`${sel.length} beyanname silinsin mi?`)) return;
+    const res = await fetch("/api/gtb/takip/sil-coklu", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ beyannameler: sel }) });
     const data = await res.json();
-    if (data.success) {
-      if (!sessiz) {
-        showToast("Tüm beyannameler başarıyla sorgulandı!", "ok");
-      }
-      listeyiYenile(false);
-    }
-  } catch (err) {
-    if (!sessiz) {
-      showToast("Kontrol sırasında hata oluştu.", "err");
-    }
-  }
-};
+    if (data.success) { toast(`${data.removed} silindi`); gtbYenile(); }
+    else toast(data.error || "Silinemedi", "err");
+  };
 
-window.acCanliModal = function() {
-  const overlay = document.getElementById("modalCanliSonuc");
-  if (overlay) overlay.classList.add("acik");
-};
-
-window.kapatCanliModal = function() {
-  const overlay = document.getElementById("modalCanliSonuc");
-  if (overlay) overlay.classList.remove("acik");
-};
-
-window.canliSorgula = async function(no) {
-  acCanliModal();
-  const icerik = document.getElementById("canli-sorgu-icerik");
-  
-  const yukleniyorHtml = `
-    <div class="spinner" style="width: 50px; height: 50px; border-width: 4px; border-top-color: #3b82f6; border-right-color: rgba(59,130,246,0.2); border-bottom-color: rgba(59,130,246,0.2); border-left-color: rgba(59,130,246,0.2); animation: spin 1s linear infinite; margin-bottom: 20px;"></div>
-    <h4 style="margin: 0 0 12px 0; font-family: monospace; font-size: 1.5rem; color:#1e293b;">${no}</h4>
-    <p style="color:#64748b; font-size: 1.05rem;">Bakanlık sunucusuna otonom bağlanılıyor...</p>
-    <div style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; display: inline-block; padding: 6px 12px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; margin-top: 12px;">Yapay zeka captcha'yı çözüyor...</div>
-  `;
-  
-  if (icerik) icerik.innerHTML = yukleniyorHtml;
-
-  try {
-    const res = await fetch(`/api/gtb/takip/sorgula/${no}`);
+  document.getElementById("btn-g-clear").onclick = async () => {
+    if (!confirm("Tüm GTB havuzu temizlensin mi?")) return;
+    const res = await fetch("/api/gtb/takip/temizle", { method: "POST" });
     const data = await res.json();
-    
-    if (data.success) {
-      let pillSinif = "st-pill";
-      if (data.kapandi || data.durum.toLowerCase().includes("kapanm")) {
-        pillSinif = "st-pill st-tamam";
-      } else if (data.durum.toLowerCase().includes("işlemde") || data.durum.toLowerCase().includes("bekliyor")) {
-        pillSinif = "st-pill st-islemde";
-      } else {
-        pillSinif = "st-pill st-hata";
-      }
+    if (data.success) { toast(`Temizlendi (${data.cleared})`); gtbYenile(); }
+    else toast(data.error || "Temizlenemedi", "err");
+  };
 
-      const basariliHtml = `
-        <div style="animation: fadeInRow 0.4s ease-out;">
-          <div style="font-size: 3.5rem; margin-bottom: 12px; line-height:1;">✅</div>
-          <h4 style="margin: 0 0 16px 0; font-family: monospace; font-size: 1.4rem; color: #1e293b;">${no}</h4>
-          
-          <div style="display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 24px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; margin-bottom:20px; box-shadow:inset 0 2px 4px rgba(0,0,0,0.02);">
-             <span class="${pillSinif}" style="font-size: 1.05rem;">
-               <span class="dot"></span> ${data.durum}
-             </span>
-          </div>
-          
-          <div style="background: rgba(241, 245, 249, 0.8); border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px; text-align: left; font-size: 0.95rem; color:#475569;">
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #e2e8f0; padding-bottom:8px;">
-              <strong>Detaylı Durum:</strong> <span>${data.durum}</span>
-            </div>
-            <div style="display:flex; justify-content:space-between;">
-              <strong>Canlı Sorgu:</strong> <span>${new Date().toLocaleTimeString("tr-TR")}</span>
-            </div>
-          </div>
-        </div>
-      `;
-      if (icerik) icerik.innerHTML = basariliHtml;
-      listeyiYenile(false);
-    } else {
-      const hataHtml = `
-        <div style="animation: fadeInRow 0.4s ease-out;">
-          <div style="font-size: 3.5rem; margin-bottom: 12px; line-height:1;">❌</div>
-          <h4 style="color: #ef4444; margin: 0 0 12px 0; font-size:1.3rem;">Bağlantı veya Captcha Hatası</h4>
-          <p style="color: #64748b; font-size:1rem; padding: 0 20px;">${data.error || "Güvenlik kodu çözülemedi veya bakanlık sunucusu yanıt vermedi. Lütfen birazdan tekrar deneyin."}</p>
-        </div>
-      `;
-      if (icerik) icerik.innerHTML = hataHtml;
-    }
-  } catch (err) {
-    const baglantiHataHtml = `
-      <div style="animation: fadeInRow 0.4s ease-out;">
-        <div style="font-size: 3.5rem; margin-bottom: 12px; line-height:1;">⚠️</div>
-        <h4 style="color: #f59e0b; margin: 0 0 12px 0; font-size:1.3rem;">Sunucu Bağlantı Hatası</h4>
-        <p style="color: #64748b; font-size:1rem;">İnternet bağlantınızda veya lokal sunucuda geçici bir kesinti oluştu.</p>
-      </div>
-    `;
-    if (icerik) icerik.innerHTML = baglantiHataHtml;
-  }
-};
-
-window.tekliAnlikSorgula = function() {
-  const metinEl = document.getElementById("txt-beyannameler");
-  if (!metinEl) return;
-  const metin = metinEl.value.trim();
-  const ilkNo = metin.split(/[\r\n,]/)[0].trim();
-  if (!ilkNo || ilkNo.length < 10) {
-    showToast("Lütfen kutuya geçerli bir beyanname numarası yazın.", "err");
-    return;
-  }
-  canliSorgula(ilkNo);
-};
-
-// Toast notification (Modernized)
-function showToast(mesaj, tip="ok") {
-  const div = document.createElement("div");
-  div.style.position = "fixed";
-  div.style.bottom = "24px";
-  div.style.right = "24px";
-  div.style.zIndex = "999999";
-  div.style.padding = "16px 24px";
-  div.style.borderRadius = "12px";
-  div.style.boxShadow = "0 10px 40px -10px rgba(0,0,0,0.3)";
-  div.style.color = "white";
-  div.style.fontWeight = "600";
-  div.style.fontSize = "1rem";
-  div.style.display = "flex";
-  div.style.alignItems = "center";
-  div.style.gap = "12px";
-  div.style.transform = "translateY(100px)";
-  div.style.opacity = "0";
-  div.style.transition = "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
-  
-  if (tip === "err") {
-    div.style.background = "linear-gradient(135deg, #ef4444, #dc2626)";
-    div.innerHTML = `<span style="font-size:1.4rem;line-height:1;">⚠️</span> <span>${mesaj}</span>`;
-  } else {
-    div.style.background = "linear-gradient(135deg, #10b981, #059669)";
-    div.innerHTML = `<span style="font-size:1.4rem;line-height:1;">✅</span> <span>${mesaj}</span>`;
-  }
-  
-  document.body.appendChild(div);
-  
-  // Animate in
-  setTimeout(() => {
-    div.style.transform = "translateY(0)";
-    div.style.opacity = "1";
-  }, 50);
-  
-  // Animate out
-  setTimeout(() => {
-    div.style.transform = "translateY(20px)";
-    div.style.opacity = "0";
-    setTimeout(() => div.remove(), 400);
-  }, 4000);
-}
+  gtbYenile();
+  setInterval(gtbYenile, 60000);
+});
